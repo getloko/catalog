@@ -1,0 +1,49 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ],
+  "schedule": [
+    "before 6am on Monday"
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update Helm chart versions in catalog YAML files",
+      "fileMatch": [
+        "^catalog\\.yaml$",
+        "^components\\.yaml$",
+        "^repositories\\.yaml$",
+        "^examples\\.yaml$",
+        "^workloads/.*\\.yaml$"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) repositoryUrl=(?<registryUrl>\\S+)\\s+version:\\s+\"(?<currentValue>[^\"]+)\"",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+) repositoryUrl=(?<registryUrl>\\S+)\\s+version:\\s+(?<currentValue>[^\\s\"]+)",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+version:\\s+\"(?<currentValue>[^\"]+)\"",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+version:\\s+(?<currentValue>[^\\s\"]+)",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+tag:\\s+\"(?<currentValue>[^\"]+)\"",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)\\s+tag:\\s+(?<currentValue>[^\\s\"]+)",
+        "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>[^\\s]+)\\s+image:\\s+[^:]+:(?<currentValue>[^\\s\"]+)"
+      ]
+    }
+  ]
+}

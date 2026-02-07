@@ -1,0 +1,100 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: webapp-pr-previews
+  namespace: {{ gitops_namespace }}
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - pullRequest:
+        gitea:
+          owner: {{ forgejo_org }}
+          repo: {{ app_name }}
+          api: {{ forgejo_base_url }}
+          tokenRef:
+            secretName: forgejo-repo-secret
+            key: password
+          insecure: true
+          labels:
+            - preview-built
+        requeueAfterSeconds: 60
+  template:
+    metadata:
+      name: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+    spec:
+      project: default
+      source:
+{% if gitless %}
+        repoURL: {{ sample_webapp_pr_oci_url }}
+        targetRevision: "pr-{{ '{{' }}.number{{ '}}' }}-{{ '{{' }}.head_short_sha_7{{ '}}' }}"
+        path: .
+{% else %}
+        repoURL: {{ repo_url }}
+        targetRevision: HEAD
+        path: apps/sample-webapp/overlays/preview
+        kustomize:
+          namespace: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+          commonLabels:
+            app: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+            app.kubernetes.io/instance: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+            project: default
+          commonAnnotations:
+            app/preview-host: "webapp-pr-{{ '{{' }}.number{{ '}}' }}.{{ preview_domain }}"
+          images:
+            - "webapp={{ container_registry_url }}/{{ app_repo }}:pr-{{ '{{' }}.number{{ '}}' }}-{{ '{{' }}.head_short_sha_7{{ '}}' }}"
+          patches:
+            - patch: |-
+                - op: replace
+                  path: /metadata/name
+                  value: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+              target:
+                kind: Deployment
+            - patch: |-
+                - op: replace
+                  path: /metadata/name
+                  value: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+              target:
+                kind: Service
+            - patch: |-
+                - op: replace
+                  path: /metadata/name
+                  value: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+                - op: replace
+                  path: /spec/rules/0/host
+                  value: "webapp-pr-{{ '{{' }}.number{{ '}}' }}.{{ preview_domain }}"
+                - op: replace
+                  path: /spec/tls/0/hosts/0
+                  value: "webapp-pr-{{ '{{' }}.number{{ '}}' }}.{{ preview_domain }}"
+                - op: replace
+                  path: /spec/rules/0/http/paths/0/backend/service/name
+                  value: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+              target:
+                kind: Ingress
+{% endif %}
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+      syncPolicy:
+        managedNamespaceMetadata:
+          labels:
+            argocd.argoproj.io/instance: "webapp-pr-{{ '{{' }}.number{{ '}}' }}"
+          annotations:
+            argocd.argoproj.io/tracking-id: >-
+              webapp-pr-{{ '{{' }}.number{{ '}}' }}:/Namespace:webapp-pr-{{ '{{' }}.number{{ '}}' }}/webapp-pr-{{ '{{' }}.number{{ '}}' }}
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - ServerSideApply=true
+          - ApplyOutOfSyncOnly=true
+          - PrunePropagationPolicy=background
+          - PruneLast=true
+        retry:
+          limit: 3
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 90s

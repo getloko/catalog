@@ -1,0 +1,241 @@
+# Development & Testing Tools
+workloads:
+  httpbin:
+    category: devtools
+    description: HTTP request & response testing service — inspect headers, auth, status codes, delays, and more
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: []
+    mappings: {}
+    secrets: {}
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: mccutchen/go-httpbin
+                # renovate: datasource=docker depName=mccutchen/go-httpbin
+                tag: "2.21.0"
+              env:
+                PORT: "8088"
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /status/200
+                      port: 8088
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /status/200
+                      port: 8088
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 8088
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: httpbin.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - hosts:
+                - httpbin.${LOKO_DOMAIN}
+      resources:
+        limits:
+          cpu: 200m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+    endpoints:
+      - name: web
+        protocol: https
+        port: 8088
+        description: HTTP testing UI and API
+    connection-strings:
+      - name: web
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: infrastructure
+        target: web
+        path: /status/200
+        description: Check if httpbin is accessible
+
+  mock-smtp-sms:
+    category: devtools
+    description: SMTP & SMS testing tool - captures emails (SMTP) and SMS with web UI (MOSIP mock service)
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: [8025]  # SMTP only — web UI and WebSocket go via ingress
+    mappings: {}
+    secrets: {}
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: mosipdev/mock-smtp
+                # renovate: datasource=docker depName=mosipdev/mock-smtp
+                tag: "v1.0.0"
+              env:
+                SERVER_HOST: "0.0.0.0"
+                SERVER_PORT: "8082"
+                SMTP_SERVER_PORT: "8025"
+                WS_SERVER_PORT: "8081"
+                # External WebSocket config - tells browser to connect via HTTPS ingress
+                WS_EX_PROTOCOL: "wss"
+                WS_EX_SERVER_PORT: "443"
+                WS_EX_BASE_PATH: "/ws"
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /
+                      port: 8082
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /
+                      port: 8082
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 8082
+            websocket:
+              port: 8081
+            smtp:
+              port: 8025
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: mock-smtp-sms.${LOKO_DOMAIN}
+              paths:
+                - path: /ws
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: websocket
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - mock-smtp-sms.${LOKO_DOMAIN}
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+    endpoints:
+      - name: web
+        protocol: https
+        port: 8082
+        description: Web UI to view SMS and email messages (real-time via WebSocket)
+      - name: websocket
+        protocol: wss
+        port: 8081
+        description: WebSocket server for real-time updates (via ingress at /ws)
+      - name: smtp
+        protocol: tcp
+        port: 8025
+        description: SMTP server for email testing (captures all emails, never sends)
+    connection-strings:
+      - name: web-ui
+        template: "https://${HOST}"
+      - name: sms-api
+        template: "https://${HOST}/sendsms?mobiles={phone}&sender={app}&message={text}"
+      - name: smtp
+        template: "smtp://${HOST}:8025"
+    health-checks:
+      - name: web-ui
+        type: http
+        tier: infrastructure
+        target: web
+        path: /
+        description: Check if Web UI is accessible
+      - name: sms-send
+        type: command
+        tier: client
+        image: curlimages/curl:latest
+        command: ["curl", "-f", "https://${HOST}/sendsms?mobiles=+15551234567&sender=test&message=healthcheck"]
+        description: Test SMS sending API
+
+  it-tools:
+    category: devtools
+    description: Collection of handy online tools for developers
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: []
+    mappings: {}
+    secrets: {}
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: corentinth/it-tools
+                # renovate: datasource=docker depName=corentinth/it-tools
+                tag: "2024.10.22-7ca5933"
+      service:
+        <<: *ui-service-http-80
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: it-tools.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - it-tools.${LOKO_DOMAIN}
+    endpoints:
+      - name: web
+        protocol: https
+        port: 80
+        description: IT Tools web interface
+    connection-strings:
+      - name: web
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: client
+        target: web
+        path: /
+        description: Check if IT Tools web UI is accessible

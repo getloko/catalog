@@ -1,0 +1,45 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+{% if provider == "fluxcd" or gitless %}
+namespace: webapp-${PR_ID}
+{% else %}
+namespace: SETBYAPPSET
+{% endif %}
+resources:
+  - ../../base
+{% if provider == "fluxcd" or gitless %}
+images:
+  - name: webapp
+    newName: ${REGISTRY_URL}/${APP_REPO}
+    newTag: ${PR_ID}-${PR_SHA}
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: webapp-${PR_ID}
+    target:
+      kind: Deployment
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: webapp-${PR_ID}
+    target:
+      kind: Service
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: webapp-${PR_ID}
+      - op: replace
+        path: /spec/rules/0/host
+        value: webapp-${PR_ID}.${PREVIEW_DOMAIN}
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: webapp-${PR_ID}.${PREVIEW_DOMAIN}
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/name
+        value: webapp-${PR_ID}
+    target:
+      kind: Ingress
+{% else %}
+# Image and host patching is done by the ApplicationSet's kustomize.images + patches
+{% endif %}

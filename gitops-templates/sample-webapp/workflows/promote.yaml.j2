@@ -1,0 +1,177 @@
+name: Promote
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to promote (e.g. main-abc1234). If empty, resolved from the release commit or current dev overlay."
+        required: false
+        type: string
+
+jobs:
+  promote:
+    runs-on: loko-runner-medium
+    steps:
+      - name: Checkout app repo
+        uses: actions/checkout@v6
+
+      - name: Resolve tag to promote
+        id: tag
+        run: |
+          TAG_INPUT="${{ '{{' }} forgejo.event.inputs.tag {{ '}}' }}"
+          EVENT="${{ '{{' }} forgejo.event_name {{ '}}' }}"
+          if [ -n "$TAG_INPUT" ]; then
+            TAG="$TAG_INPUT"
+          elif [ "$EVENT" = "push" ] || [ "$EVENT" = "release" ]; then
+            SHA="${{ '{{' }} forgejo.sha {{ '}}' }}"
+            TAG="main-${SHA::7}"
+          else
+            TAG=""
+          fi
+          echo "tag=$TAG" >> "$FORGEJO_OUTPUT"
+
+      - name: Checkout gitops repo
+        uses: actions/checkout@v6
+        with:
+          repository: {{ forgejo_org }}/gitops
+          ref: main
+          path: gitops
+          token: ${{ '{{' }} secrets.LOKO_GITEA_TOKEN {{ '}}' }}
+
+      - name: Promote tag to prod
+        id: promote
+        run: |
+          cd gitops
+          TAG="${{ '{{' }} steps.tag.outputs.tag {{ '}}' }}"
+
+          if [ -z "$TAG" ]; then
+            TAG=$(sed -n 's/^[[:space:]]*newTag:[[:space:]]*//p' apps/sample-webapp/overlays/dev/kustomization.yaml | head -1)
+          fi
+
+          if [ -z "$TAG" ]; then
+            echo "Could not resolve image tag from input, release commit, or dev overlay" >&2
+            exit 1
+          fi
+
+          sed -i -E "s/^([[:space:]]*newTag:[[:space:]]*).*/\1${TAG}/" apps/sample-webapp/overlays/prod/kustomization.yaml
+
+{% if provider == "fluxcd" %}
+          # Lift suspend on first promotion; track whether gate was lifted
+          if grep -q '^  suspend: true' {{ repo_layout.environment_dir }}/{{ repo_layout.app_bindings_dirname }}/{{ repo_layout.sample_webapp_binding_prod }}; then
+            sed -i '/^  suspend: true/d' {{ repo_layout.environment_dir }}/{{ repo_layout.app_bindings_dirname }}/{{ repo_layout.sample_webapp_binding_prod }}
+            echo "gate_lifted=true" >> "$FORGEJO_OUTPUT"
+          else
+            echo "gate_lifted=false" >> "$FORGEJO_OUTPUT"
+          fi
+{% else %}
+          # Remove skip-reconcile annotation on first promotion; track whether gate was lifted
+          if grep -q 'argocd\.argoproj\.io\/skip-reconcile' {{ repo_layout.environment_dir }}/{{ repo_layout.app_bindings_dirname }}/{{ repo_layout.sample_webapp_binding_prod }}; then
+            sed -i '/argocd\.argoproj\.io\/skip-reconcile/d' {{ repo_layout.environment_dir }}/{{ repo_layout.app_bindings_dirname }}/{{ repo_layout.sample_webapp_binding_prod }}
+            echo "gate_lifted=true" >> "$FORGEJO_OUTPUT"
+          else
+            echo "gate_lifted=false" >> "$FORGEJO_OUTPUT"
+          fi
+{% endif %}
+{% if not gitless %}
+          git config user.email "ci@{{ apps_domain }}"
+          git config user.name "loko-ci"
+          git add apps/sample-webapp/overlays/prod/kustomization.yaml \
+                  {{ repo_layout.environment_dir }}/{{ repo_layout.app_bindings_dirname }}/{{ repo_layout.sample_webapp_binding_prod }}
+          git diff --cached --quiet || git commit -m "release(sample-webapp): promote ${TAG} to prod"
+          git push origin main
+{% endif %}
+{% if gitless %}
+
+      - name: Publish prod OCI artifact
+        run: |
+          cd gitops
+          mkdir -p bundle
+          kustomize build apps/sample-webapp/overlays/prod > bundle/manifests.yaml
+          tar -C bundle -czf webapp-prod.tgz .
+          oras push {{ sample_webapp_prod_oci_url | replace('oci://', '') }}:prod-latest \
+            --artifact-type application/vnd.getloko.gitops.app.v1 \
+            webapp-prod.tgz:application/vnd.oci.image.layer.v1.tar+gzip
+
+      - name: Unsuspend prod OCIRepository on first promotion
+        if: ${{ '{{' }} success() && steps.promote.outputs.gate_lifted == 'true' {{ '}}' }}
+        run: |
+          kubectl patch ocirepository webapp-prod -n {{ gitops_namespace }} \
+            --type=merge -p '{"spec":{"suspend":false}}'
+
+      - name: Publish updated gitops-root OCI artifact
+        if: ${{ '{{' }} success() && steps.promote.outputs.gate_lifted == 'true' {{ '}}' }}
+        run: |
+          # Re-publish gitops-root only when the prod gate was lifted (first promotion)
+          cd gitops
+          mkdir -p bundle-root
+          cp -R {{ repo_layout.environment_dir }}/. bundle-root/
+          tar -C bundle-root -czf gitops-root.tgz .
+          oras push {{ gitops_root_oci_url | replace('oci://', '') }}:{{ env_name }} \
+            --artifact-type application/vnd.getloko.gitops.root.v1 \
+            gitops-root.tgz:application/vnd.oci.image.layer.v1.tar+gzip
+
+{% if provider == "argocd" %}
+      - name: Trigger ArgoCD hard refresh (loko-root)
+        if: ${{ '{{' }} success() && steps.promote.outputs.gate_lifted == 'true' {{ '}}' }}
+        run: |
+          set -euo pipefail
+          ARGOCD_URL="http://argocd-server.{{ gitops_namespace }}.svc.cluster.local"
+          TOKEN=$(curl -sf -X POST "${ARGOCD_URL}/api/v1/session" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"admin\",\"password\":\"${{ '{{' }} secrets.LOKO_ARGOCD_TOKEN {{ '}}' }}\"}" \
+            | awk -F'"token":"' '{print $2}' | cut -d'"' -f1)
+          if [ -z "${TOKEN}" ]; then
+            echo "Failed to obtain ArgoCD session token" >&2
+            exit 1
+          fi
+          curl -sf "${ARGOCD_URL}/api/v1/applications/loko-root?refresh=hard" \
+            -H "Authorization: Bearer ${TOKEN}" > /dev/null
+
+      - name: Trigger ArgoCD hard refresh (webapp-prod)
+        if: ${{ '{{' }} success() {{ '}}' }}
+        run: |
+          set -euo pipefail
+          ARGOCD_URL="http://argocd-server.{{ gitops_namespace }}.svc.cluster.local"
+          TOKEN=$(curl -sf -X POST "${ARGOCD_URL}/api/v1/session" \
+            -H "Content-Type: application/json" \
+            -d "{\"username\":\"admin\",\"password\":\"${{ '{{' }} secrets.LOKO_ARGOCD_TOKEN {{ '}}' }}\"}" \
+            | awk -F'"token":"' '{print $2}' | cut -d'"' -f1)
+          if [ -z "${TOKEN}" ]; then
+            echo "Failed to obtain ArgoCD session token" >&2
+            exit 1
+          fi
+          curl -sf "${ARGOCD_URL}/api/v1/applications/webapp-prod?refresh=hard" \
+            -H "Authorization: Bearer ${TOKEN}" > /dev/null
+{% endif %}
+{% if provider == "fluxcd" %}
+      - name: Notify Flux to reconcile prod
+        if: ${{ '{{' }} success() {{ '}}' }}
+        run: |
+          TOKEN="loko-webhook-v1"
+          HOOK_PATH=$(echo -n "${TOKEN}" | sha256sum | awk '{print $1}')
+          PAYLOAD='{}'
+          SIG=$(echo -n "${PAYLOAD}" | openssl dgst -sha256 -hmac "${TOKEN}" | awk '{print $2}')
+          curl -sf -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Signature: sha256=${SIG}" \
+            -d "${PAYLOAD}" \
+            "http://webhook-receiver.{{ gitops_namespace }}.svc.cluster.local/hook/${HOOK_PATH}" || echo "Flux notification failed (non-fatal)"
+{% endif %}
+{% if provider == "fluxcd" %}
+      - name: Notify Flux to reconcile gitops root
+        if: ${{ '{{' }} success() && steps.promote.outputs.gate_lifted == 'true' {{ '}}' }}
+        run: |
+          TOKEN="loko-webhook-v1"
+          HOOK_PATH=$(echo -n "${TOKEN}" | sha256sum | awk '{print $1}')
+          PAYLOAD='{}'
+          SIG=$(echo -n "${PAYLOAD}" | openssl dgst -sha256 -hmac "${TOKEN}" | awk '{print $2}')
+          curl -sf -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Signature: sha256=${SIG}" \
+            -d "${PAYLOAD}" \
+            "http://webhook-receiver.{{ gitops_namespace }}.svc.cluster.local/hook/${HOOK_PATH}" || echo "Flux notification failed (non-fatal)"
+{% endif %}
+{% endif %}

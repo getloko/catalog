@@ -1,0 +1,15 @@
+# renovate: datasource=docker depName=busybox versioning=docker
+FROM busybox:stable-uclibc
+
+ARG BUILD_ID
+
+COPY src/ /www/
+
+RUN sed -i "s/__BUILD_ID__/${BUILD_ID:-local}/g" /www/index.html
+
+EXPOSE 80
+
+CMD ["httpd", "-f", "-p", "80", "-h", "/www"]
+
+HEALTHCHECK --interval=5s --timeout=3s --start-period=5s --retries=5 \
+  CMD wget -q --spider http://localhost/ || exit 1

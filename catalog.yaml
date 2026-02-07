@@ -1,0 +1,121 @@
+# ============================================================================
+# Main Catalog - Loko Workload Definitions
+# ============================================================================
+# Template variables available in presets values:
+#   ${LOKO_DOMAIN}                    - Local domain (e.g., "dev.me")
+#   ${LOKO_APPS_DOMAIN}               - Apps domain (same as ${LOKO_DOMAIN})
+#   ${LOKO_PREVIEW_DOMAIN}            - Preview wildcard zone (e.g., "pr.dev.me")
+#   ${LOKO_IP}                        - Local IP address
+#   ${LOKO_ENV_NAME}                  - Environment name
+#   ${LOKO_REGISTRY_NAME}             - Registry name
+#   ${LOKO_REGISTRY_HOST}             - Registry host
+#   ${LOKO_SYSTEM_WORKLOADS_NAMESPACE} - System workloads namespace
+#   ${LOKO_KUBECTL_CONTEXT}           - Kubernetes context name
+version: "1"
+
+# File includes (processed by catalog loader)
+includes:
+  - repositories.yaml
+  - components.yaml
+  - workloads/databases.yaml
+  - workloads/messaging.yaml
+  - workloads/cache.yaml
+  - workloads/storage.yaml
+  - workloads/devops.yaml
+  - workloads/devtools.yaml
+  - workloads/gitops.yaml
+  - workloads/collaboration.yaml
+  - examples.yaml
+
+# GitOps template files (fetched verbatim, not parsed as YAML catalog data)
+template-includes:
+  # gitops repo templates
+  - gitops-manifests/repo-layout.yaml
+  - gitops-templates/gitops/README.md.j2
+  - gitops-templates/gitops/environments/kustomization.yaml.j2
+  - gitops-templates/gitops/workflows/hello.yaml.j2
+  - gitops-templates/gitops/flux/git-repo.yaml.j2
+  - gitops-templates/gitops/flux/flux-kustomization.yaml.j2
+  - gitops-templates/gitops/flux/receiver-gitops.yaml.j2
+  - gitops-templates/gitops/flux/receiver-pr-previews.yaml.j2
+  - gitops-templates/gitops/flux/echo.yaml.j2
+  - gitops-templates/gitops/flux/sample-webapp/dev.yaml.j2
+  - gitops-templates/gitops/flux/sample-webapp/prod.yaml.j2
+  - gitops-templates/gitops/flux/sample-webapp/pr-preview.yaml.j2
+  - gitops-templates/gitops/argocd/application.yaml.j2
+  - gitops-templates/gitops/argocd/repo-secret.yaml.j2
+  - gitops-templates/gitops/argocd/echo.yaml.j2
+  - gitops-templates/gitops/argocd/sample-webapp/dev.yaml.j2
+  - gitops-templates/gitops/argocd/sample-webapp/prod.yaml.j2
+  - gitops-templates/gitops/argocd/sample-webapp/pr-preview.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/base/kustomization.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/base/deployment.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/base/ingress.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/base/service.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/overlays/dev/kustomization.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/overlays/dev/namespace.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/overlays/prod/kustomization.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/overlays/prod/namespace.yaml.j2
+  - gitops-templates/gitops/apps/sample-webapp/overlays/preview/kustomization.yaml.j2
+  # sample-webapp repo templates
+  - gitops-templates/sample-webapp/README.md.j2
+  - gitops-templates/sample-webapp/app-web/Dockerfile.j2
+  - gitops-templates/sample-webapp/app-web/src/index.html.j2
+  - gitops-templates/sample-webapp/app-web/src/style.css
+  - gitops-templates/sample-webapp/workflows/build.yaml.j2
+  - gitops-templates/sample-webapp/workflows/pr.yaml.j2
+  - gitops-templates/sample-webapp/workflows/promote.yaml.j2
+
+# ============================================================================
+# Shared Templates (YAML Anchors)
+# Available to all included files via merge keys (<<: *anchor-name)
+# ============================================================================
+_templates:
+  # Traefik ingress configuration (websecure + TLS)
+  ingress-traefik: &ingress-traefik
+    enabled: true
+    className: traefik
+    annotations:
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.tls: "true"
+
+  # ClusterIP service (most workloads)
+  service-clusterip: &service-clusterip
+    type: ClusterIP
+
+  # Standard UI/linked workload service config (bjw-s pattern) - port 80
+  ui-service-http-80: &ui-service-http-80
+    main:
+      controller: main
+      ports:
+        http:
+          port: 80
+
+  # Standard UI/linked workload service config (bjw-s pattern) - port 8081
+  ui-service-http-8081: &ui-service-http-8081
+    main:
+      controller: main
+      ports:
+        http:
+          port: 8081
+
+  # Port health check template
+  health-check-port: &health-check-port
+    type: tcp
+    tier: infrastructure
+    description: Check if port is open
+
+  # bjw-s app-template chart config
+  chart-bjw-s: &chart-bjw-s
+    repo: bjw-s
+    name: bjw-s/app-template
+    # renovate: datasource=helm depName=app-template repositoryUrl=https://bjw-s-labs.github.io/helm-charts
+    version: "5.0.0"
+
+  # Chart base for groundhog2k
+  chart-base-groundhog2k: &chart-base-groundhog2k
+    repo: groundhog2k
+
+  # Default namespace
+  namespace-loko-system: &namespace-system
+    namespace: loko-system

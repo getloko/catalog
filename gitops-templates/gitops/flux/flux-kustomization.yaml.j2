@@ -1,0 +1,20 @@
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: loko-root
+  namespace: {{ gitops_namespace }}
+spec:
+  interval: 10m0s
+{% if gitless %}
+  path: ./
+{% else %}
+  path: ./{{ repo_layout.environment_dir }}
+{% endif %}
+  prune: true
+  sourceRef:
+{% if gitless %}
+    kind: OCIRepository
+{% else %}
+    kind: GitRepository
+{% endif %}
+    name: {{ gitops_namespace }}

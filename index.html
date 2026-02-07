@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LoKO Catalog</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d2e;
+      --border: #2a2d3e;
+      --accent: #7c6af7;
+      --accent2: #4fb8e0;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+      --code-bg: #12151f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+    }
+    a { color: var(--accent2); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 0;
+      background: linear-gradient(135deg, #0f1117 0%, #1a1d2e 100%);
+    }
+    .container { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+    .header-inner { display: flex; align-items: center; gap: 1.5rem; }
+    header img { width: 64px; height: 64px; border-radius: 12px; }
+    header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+    header h1 span { color: var(--accent); }
+    header p { color: var(--muted); margin-top: 0.25rem; }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      vertical-align: middle;
+      margin-left: 0.5rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    main { padding: 2.5rem 0; }
+    section { margin-bottom: 2.5rem; }
+    h2 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      color: var(--accent2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+    }
+    .card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem; }
+    .card p { font-size: 0.85rem; color: var(--muted); }
+    .tags { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.6rem; }
+    .tag {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.45rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: "SFMono-Regular", Consolas, monospace;
+    }
+
+    .files { display: flex; flex-direction: column; gap: 0.5rem; }
+    .file-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+    }
+    .file-row .icon { color: var(--accent); font-size: 1rem; }
+    .file-row .name { font-family: monospace; font-size: 0.9rem; flex: 1; }
+    .file-row .desc { font-size: 0.8rem; color: var(--muted); }
+
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+    }
+    code { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+    .comment { color: #4a5568; }
+    .cmd { color: #7c6af7; }
+    .arg { color: #4fb8e0; }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 1.5rem 0;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--accent2); }
+    .docs-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--accent);
+      color: #fff !important;
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      text-decoration: none !important;
+    }
+    .docs-link:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <img src="https://avatars.githubusercontent.com/u/257918568?s=128" alt="LoKO Logo" />
+      <div>
+        <h1>Lo<span>KO</span> Catalog <span class="badge">v1</span></h1>
+        <p>Pre-configured workloads for local Kubernetes development</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section>
+      <h2>Workload Categories</h2>
+      <div class="grid">
+        <div class="card">
+          <h3>🗄️ Databases</h3>
+          <p>Relational, document, and NoSQL stores with optional UI companions.</p>
+          <div class="tags">
+            <span class="tag">postgres</span>
+            <span class="tag">mysql</span>
+            <span class="tag">mongodb</span>
+            <span class="tag">dynamodb-local</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>⚡ Cache &amp; KV</h3>
+          <p>In-memory key-value stores and caching layers.</p>
+          <div class="tags">
+            <span class="tag">valkey</span>
+            <span class="tag">memcached</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>📨 Message Queues</h3>
+          <p>Async messaging, streaming, and pub/sub brokers.</p>
+          <div class="tags">
+            <span class="tag">rabbitmq</span>
+            <span class="tag">nats</span>
+            <span class="tag">redpanda</span>
+            <span class="tag">elasticmq</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🪣 Object Storage</h3>
+          <p>S3-compatible local object storage.</p>
+          <div class="tags">
+            <span class="tag">garage</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🔧 DevOps &amp; CI/CD</h3>
+          <p>Source control and continuous integration tools.</p>
+          <div class="tags">
+            <span class="tag">forgejo</span>
+            <span class="tag">forgejo-runner</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🧪 Dev &amp; Testing Tools</h3>
+          <p>Utilities to support local development and integration tests.</p>
+          <div class="tags">
+            <span class="tag">mock-smtp-sms</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🚀 GitOps</h3>
+          <p>Continuous delivery and cluster reconciliation operators.</p>
+          <div class="tags">
+            <span class="tag">argocd</span>
+            <span class="tag">flux-operator</span>
+            <span class="tag">flux-instance</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>🤝 Collaboration</h3>
+          <p>Shared diagramming and team tools.</p>
+          <div class="tags">
+            <span class="tag">excalidraw</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Catalog Files</h2>
+      <div class="files">
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="catalog.yaml">catalog.yaml</a></span>
+          <span class="desc">Root manifest — includes all categories and templates</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="components.yaml">components.yaml</a></span>
+          <span class="desc">Reusable Helm component definitions</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="repositories.yaml">repositories.yaml</a></span>
+          <span class="desc">Helm repository sources</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="examples.yaml">examples.yaml</a></span>
+          <span class="desc">Configuration examples and project templates</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/databases.yaml">workloads/databases.yaml</a></span>
+          <span class="desc">Postgres, MySQL, MongoDB, DynamoDB Local</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/cache.yaml">workloads/cache.yaml</a></span>
+          <span class="desc">Valkey, Memcached</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/messaging.yaml">workloads/messaging.yaml</a></span>
+          <span class="desc">RabbitMQ, NATS, Redpanda, ElasticMQ</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/storage.yaml">workloads/storage.yaml</a></span>
+          <span class="desc">Garage (S3-compatible)</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/devops.yaml">workloads/devops.yaml</a></span>
+          <span class="desc">Forgejo, Forgejo Runner</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/devtools.yaml">workloads/devtools.yaml</a></span>
+          <span class="desc">Mock SMTP/SMS</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/gitops.yaml">workloads/gitops.yaml</a></span>
+          <span class="desc">ArgoCD, Flux Operator, Flux Instance</span>
+        </div>
+        <div class="file-row">
+          <span class="icon">📄</span>
+          <span class="name"><a href="workloads/collaboration.yaml">workloads/collaboration.yaml</a></span>
+          <span class="desc">Excalidraw</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>CLI Commands</h2>
+      <pre><code><span class="comment"># List all available workloads</span>
+<span class="cmd">loko</span> <span class="arg">catalog list</span>
+
+<span class="comment"># Search by name or tag</span>
+<span class="cmd">loko</span> <span class="arg">catalog search</span> postgres
+
+<span class="comment"># Show workload details and available presets</span>
+<span class="cmd">loko</span> <span class="arg">catalog info</span> postgres
+
+<span class="comment"># Install a workload into your environment</span>
+<span class="cmd">loko</span> <span class="arg">workload install</span> postgres
+
+<span class="comment"># Install with a specific preset</span>
+<span class="cmd">loko</span> <span class="arg">workload install</span> postgres <span class="arg">--preset</span> postgres-ui
+
+<span class="comment"># Sync catalog from remote (update to latest)</span>
+<span class="cmd">loko</span> <span class="arg">catalog sync</span>
+
+<span class="comment"># Point to a custom catalog source</span>
+<span class="cmd">loko</span> <span class="arg">catalog use</span> <span class="arg">https://raw.githubusercontent.com/getloko/catalog/main/catalog.yaml</span></code></pre>
+    </section>
+
+    <section>
+      <h2>Documentation</h2>
+      <p style="color:var(--muted); margin-bottom:0.75rem;">
+        Full catalog docs, schema reference, and contribution guidelines live in the LoKO docs site.
+      </p>
+      <a class="docs-link" href="https://getloko.github.io/_catalog/">Browse Catalog Docs →</a>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <p>
+      <a href="https://github.com/getloko/catalog">getloko/catalog</a> ·
+      <a href="https://github.com/getloko/loko">getloko/loko</a> ·
+      <a href="https://getloko.github.io/">LoKO Docs</a>
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

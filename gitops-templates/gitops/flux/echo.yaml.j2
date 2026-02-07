@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: echo
+  namespace: {{ gitops_namespace }}
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: http-webhook
+      # renovate: datasource=helm depName=http-webhook registryUrl=https://charts.securecodebox.io
+      version: "5.5.0"
+      sourceRef:
+        kind: HelmRepository
+        name: securecodebox
+        namespace: {{ gitops_namespace }}
+  values:
+    ingress:
+      enabled: true
+      ingressClassName: "traefik"
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+      hosts:
+        - host: echo.{{ apps_domain }}
+          paths:
+            - /
+      tls:
+        - hosts:
+            - echo.{{ apps_domain }}
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: securecodebox
+  namespace: {{ gitops_namespace }}
+spec:
+  interval: 1h
+  url: https://charts.securecodebox.io

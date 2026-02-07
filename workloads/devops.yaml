@@ -1,0 +1,384 @@
+# DevOps & GitOps Workloads
+workloads:
+  forgejo:
+    category: devops
+    description: Self-hosted lightweight Git service (fork of Gitea)
+    chart:
+      repo: forgejo-helm
+      name: forgejo-helm/forgejo
+      # renovate: datasource=docker depName=code.forgejo.org/forgejo-helm/forgejo
+      version: "16.2.1"
+    defaults:
+      namespace: loko-system
+      ports: []  # Traffic goes through Traefik ingress on 443
+      storage:
+        size: 10Gi
+    mappings:
+      storage: persistence.size
+      secrets.admin.username: gitea.admin.username
+      secrets.admin.password: gitea.admin.password  # pragma: allowlist secret
+    secrets:
+      admin:
+        name: admin
+        type: user-pass
+        description: Forgejo admin credentials
+        fields:
+          - name: username
+            type: static
+            value: loko
+            sensitive: false
+          - name: password
+            type: password
+            length: 16
+        mappings:
+          username: gitea.admin.username
+          password: gitea.admin.password  # pragma: allowlist secret
+    presets:
+      # Forgejo server configuration
+      gitea:
+        admin:
+          email: "loko@${LOKO_DOMAIN}"
+        config:
+          server:
+            # Disable SSH server completely
+            DISABLE_SSH: true
+            START_SSH_SERVER: false
+          actions:
+            # Enable Forgejo Actions (GitHub Actions compatible CI/CD)
+            ENABLED: true
+          webhook:
+            # Allow webhooks to cluster-internal services
+            ALLOWED_HOST_LIST: private
+          database:
+            DB_TYPE: sqlite3
+            SQLITE_JOURNAL_MODE: WAL
+          cache:
+            ADAPTER: twoqueue
+            HOST: '{"size":100,"recent_ratio":0.25,"ghost_ratio":0.5}'
+          queue:
+            TYPE: db
+          session:
+            PROVIDER: db
+      service:
+        http:
+          type: ClusterIP
+          port: 3000
+      ingress:
+        enabled: true
+        <<: *ingress-traefik
+        hosts:
+          - host: forgejo.${LOKO_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - forgejo.${LOKO_DOMAIN}
+      persistence:
+        enabled: true
+        size: 10Gi
+      # Use rootless mode for better security
+      image:
+        rootless: true
+    endpoints:
+      - name: http
+        protocol: http
+        port: 3000
+        description: Forgejo web UI and Git HTTPS (SSH disabled)
+    connection-strings:
+      - name: web-ui
+        template: "https://${HOST}"
+      - name: git-https
+        template: "https://${HOST}/repo.git"
+    health-checks:
+      - name: api
+        type: http
+        tier: infrastructure
+        target: http
+        path: /api/healthz
+        description: Check if Forgejo API is accessible
+    links:
+      - type: addon
+        target: forgejo-runner
+        auto-deploy: true
+        required: false
+        lifecycle-binding: true
+
+  # CI/CD Runner (merged from runners.yaml)
+  forgejo-runner:
+    category: runner
+    description: CI/CD runner for Forgejo Actions (GitHub Actions compatible)
+    chart:
+      repo: forgejo-runner
+      name: forgejo-runner/forgejo-runner
+      # renovate: datasource=docker depName=codeberg.org/wrenix/helm-charts/forgejo-runner
+      version: "0.7.6"
+    defaults:
+      namespace: loko-system
+      ports: []
+    presets:
+      # Required by upstream chart guard for this frozen release line.
+      knownLastVersion: true
+      runner:
+        config:
+          existingInitSecret: "forgejo-runner-init"  # pragma: allowlist secret
+          create: true
+          file:
+            log:
+              level: info
+            runner:
+              insecure: true
+              capacity: 10
+              labels:
+                - "loko-runner:docker://node:18-alpine"
+                - "loko-runner-small:docker://node:18-alpine"
+                - "loko-runner-medium:docker://ghcr.io/getloko/container-images/act:latest"
+                - "loko-runner-large:docker://catthehacker/ubuntu:act"
+              envs:
+                DOCKER_HOST: "tcp://127.0.0.1:2376"
+                DOCKER_TLS_VERIFY: "1"
+                DOCKER_CERT_PATH: "/certs/client"
+                CURL_CA_BUNDLE: "/usr/local/share/ca-certificates/loko-ca.crt"
+                GIT_SSL_CAINFO: "/usr/local/share/ca-certificates/loko-ca.crt"
+                NODE_EXTRA_CA_CERTS: "/usr/local/share/ca-certificates/loko-ca.crt"
+                SSL_CERT_FILE: "/usr/local/share/ca-certificates/loko-ca.crt"
+            container:
+              network: host
+              privileged: false
+              options: "-v /certs/client:/certs/client -v /usr/local/share/ca-certificates/loko-ca.crt:/usr/local/share/ca-certificates/loko-ca.crt:ro"
+              valid_volumes:
+                - /certs/client
+                - /usr/local/share/ca-certificates/loko-ca.crt
+        serviceAccount:
+          create: true
+      # Standard Helm values for mounts and volumes (applied to dind too)
+      volumeMounts:
+        - name: loko-ca
+          mountPath: /usr/local/share/ca-certificates/loko-ca.crt
+          subPath: loko-ca.pem
+          readOnly: true
+        - name: registry-ca
+          mountPath: /etc/docker/certs.d/${LOKO_REGISTRY_NAME}.${LOKO_DOMAIN}
+          readOnly: true
+      volumes:
+        - name: loko-ca
+          secret:
+            secretName: loko-ca  # pragma: allowlist secret
+        - name: registry-ca
+          secret:
+            secretName: loko-ca  # pragma: allowlist secret
+            items:
+              - key: loko-ca.pem
+                path: ca.crt
+      # The chart uses 'extraEnvVars' for the runner container
+      extraEnvVars:
+        - name: CURL_CA_BUNDLE
+          value: "/usr/local/share/ca-certificates/loko-ca.crt"
+        - name: NODE_EXTRA_CA_CERTS
+          value: "/usr/local/share/ca-certificates/loko-ca.crt"
+        - name: SSL_CERT_FILE
+          value: "/usr/local/share/ca-certificates/loko-ca.crt"
+        - name: LOKO_TRUST_CA
+          value: "true"
+
+  terrakube:
+    category: devops
+    description: Open-source Terraform/OpenTofu automation platform — remote state, workspaces, module registry, and team-based access control
+    chart:
+      repo: terrakube
+      name: terrakube/terrakube
+      # renovate: datasource=helm depName=terrakube repositoryUrl=https://terrakube-io.github.io/terrakube-helm-chart
+      version: "4.6.6"
+    defaults:
+      namespace: loko-system
+      ports: []
+    mappings:
+      storage: executorService.persistence.size
+    secrets: {}
+    requires:
+      - workload: postgres
+        required: true
+        reason: "Database backend for API and registry (replaces bundled bitnami postgresql)"
+      - workload: valkey
+        required: true
+        reason: "Cache and job queue (replaces bundled bitnami redis)"
+      - workload: ministack
+        required: true
+        reason: "AWS provider target and S3 backend for Terraform state — core use case"
+        alternatives: [garage]
+    skip-name-override: true
+    skip-scheduling-overrides: true
+    presets:
+      api:
+        defaultDatabase: false
+        defaultRedis: false
+        existingSecret: true  # managed by terrakube post-sync plugin
+        loadSampleData: false
+        properties:
+          databaseType: "POSTGRESQL"
+          databaseHostname: "postgres.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local"
+          databaseName: "terrakube"
+          databaseUser: "postgres"
+          databaseSchema: "public"
+          databasePort: "5432"
+          databaseSslMode: "disable"
+          redisHostname: "valkey.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local"
+          redisPort: "6379"
+          redisPassword: ""  # valkey has no auth
+        # Paketo buildpack auto-imports certs from /etc/ssl/certs/ — just mount loko CA there
+        volumeMounts:
+          - name: loko-ca
+            mountPath: /etc/ssl/certs/loko-ca.pem
+            subPath: loko-ca.pem
+            readOnly: true
+        volumes:
+          - name: loko-ca
+            secret:
+              secretName: loko-ca
+              items:
+                - key: loko-ca.pem
+                  path: loko-ca.pem
+      executor:
+        existingSecret: true  # managed by terrakube post-sync plugin
+      storage:
+        defaultStorage: false
+        minio:
+          accessKey: "test"  # pragma: allowlist secret
+          secretKey: "test"  # pragma: allowlist secret
+          bucketName: "terrakube"
+          endpoint: "http://ministack.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local:4566"
+      security:
+        useOpenLDAP: true
+        adminGroup: "TERRAKUBE_ADMIN"
+        # Override patSecret and internalSecret with random values before production use
+        patSecret: "loko-default-pat-secret-change-me!"  # pragma: allowlist secret
+        internalSecret: "loko-default-int-secret-change!"  # pragma: allowlist secret
+        dexClientId: "terrakube-client"
+        dexClientScope: "email openid profile offline_access groups"
+        dexIssuerUri: "https://terrakube-api.${LOKO_DOMAIN}/dex"
+      dex:
+        enabled: true
+        config:
+          issuer: "https://terrakube-api.${LOKO_DOMAIN}/dex"
+          storage:
+            type: memory
+          web:
+            http: 0.0.0.0:5556
+            allowedOrigins: ['*']
+          oauth2:
+            responseTypes: ["code", "token", "id_token"]
+            skipApprovalScreen: true
+          connectors:
+            - type: ldap
+              name: OpenLDAP
+              id: ldap
+              config:
+                host: terrakube-openldap-service:1389
+                insecureNoSSL: true
+                bindDN: cn=admin,dc=example,dc=org
+                bindPW: admin  # pragma: allowlist secret
+                usernamePrompt: Email Address
+                userSearch:
+                  baseDN: ou=users,dc=example,dc=org
+                  filter: "(objectClass=person)"
+                  username: mail
+                  idAttr: DN
+                  emailAttr: mail
+                  nameAttr: cn
+                groupSearch:
+                  baseDN: ou=Groups,dc=example,dc=org
+                  filter: "(objectClass=groupOfNames)"
+                  userMatchers:
+                    - userAttr: DN
+                      groupAttr: member
+                  nameAttr: cn
+          staticClients:
+            - id: terrakube-client
+              redirectURIs:
+                - "https://terrakube-ui.${LOKO_DOMAIN}"
+                - "/device/callback"
+                - "http://localhost:10000/login"
+                - "http://localhost:10001/login"
+              name: "terrakube-client"
+              public: true
+      ingress:
+        useTls: true
+        includeTlsHosts: true
+        controller: "generic"
+        ui:
+          enabled: true
+          domain: "terrakube-ui.${LOKO_DOMAIN}"
+          path: "/"
+          pathType: "Prefix"
+          ingressClassName: "traefik"
+          useTls: true
+          tlsSecretName: ""
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+        api:
+          enabled: true
+          domain: "terrakube-api.${LOKO_DOMAIN}"
+          path: "/"
+          pathType: "Prefix"
+          ingressClassName: "traefik"
+          useTls: true
+          tlsSecretName: ""
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+        registry:
+          enabled: true
+          domain: "terrakube-reg.${LOKO_DOMAIN}"
+          path: "/"
+          pathType: "Prefix"
+          ingressClassName: "traefik"
+          useTls: true
+          tlsSecretName: ""
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+        dex:
+          enabled: true
+          path: "/dex/"
+          pathType: "Prefix"
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/router.tls: "true"
+        executor:
+          enabled: false
+    endpoints:
+      - name: ui
+        protocol: https
+        port: 443
+        description: Terrakube web UI (workspaces, runs, teams)
+      - name: api
+        protocol: https
+        port: 443
+        description: Terrakube REST API
+      - name: registry
+        protocol: https
+        port: 443
+        description: Terraform module and provider registry
+    connection-strings:
+      - name: ui
+        template: "https://terrakube-ui.${LOKO_DOMAIN}"
+      - name: api
+        template: "https://terrakube-api.${LOKO_DOMAIN}"
+      - name: registry
+        template: "https://terrakube-reg.${LOKO_DOMAIN}"
+      - name: terraform-backend
+        template: "https://terrakube-api.${LOKO_DOMAIN}/tfstate/v1/organization/{org}/workspace/{workspace}"
+    health-checks:
+      - name: api
+        type: http
+        tier: infrastructure
+        target: api
+        path: /api/v1/organization
+        description: Check if Terrakube API is accessible
+      - name: ui
+        type: http
+        tier: client
+        target: ui
+        path: /
+        description: Check if Terrakube UI is accessible

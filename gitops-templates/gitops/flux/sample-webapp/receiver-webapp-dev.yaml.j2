@@ -1,0 +1,18 @@
+{% if gitless %}
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: webapp-dev-sync
+  namespace: {{ gitops_namespace }}
+spec:
+  type: generic
+  events:
+    - package
+  secretRef:
+    name: webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+      kind: OCIRepository
+      name: webapp-dev
+      namespace: {{ gitops_namespace }}
+{% endif %}

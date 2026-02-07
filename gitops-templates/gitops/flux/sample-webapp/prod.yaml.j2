@@ -1,0 +1,37 @@
+{% if gitless %}
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: OCIRepository
+metadata:
+  name: webapp-prod
+  namespace: {{ gitops_namespace }}
+spec:
+  interval: 5m
+  suspend: true  # unsuspended on first promotion; avoids NAME_UNKNOWN errors before any release exists
+  url: {{ sample_webapp_prod_oci_url }}
+  ref:
+    tag: prod-latest
+  certSecretRef:
+    name: forgejo-ca-cert
+---
+{% endif %}
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: webapp-prod
+  namespace: {{ gitops_namespace }}
+spec:
+  interval: 10m
+  prune: true
+  suspend: true  # lifted on first promotion
+{% if gitless %}
+  path: ./
+  sourceRef:
+    kind: OCIRepository
+    name: webapp-prod
+{% else %}
+  path: ./apps/sample-webapp/overlays/prod
+  sourceRef:
+    kind: GitRepository
+    name: {{ gitops_namespace }}
+{% endif %}
+  targetNamespace: webapp-prod

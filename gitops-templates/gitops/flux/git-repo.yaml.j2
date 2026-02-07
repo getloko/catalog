@@ -1,0 +1,24 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+{% if gitless %}
+kind: OCIRepository
+{% else %}
+kind: GitRepository
+{% endif %}
+metadata:
+  name: {{ gitops_namespace }}
+  namespace: {{ gitops_namespace }}
+spec:
+  interval: 1m0s
+{% if gitless %}
+  url: {{ gitops_root_oci_url }}
+  ref:
+    tag: {{ env_name }}
+  certSecretRef:
+    name: forgejo-ca-cert
+{% else %}
+  url: {{ repo_url }}
+  ref:
+    branch: main
+  secretRef:
+    name: forgejo-gitops-auth
+{% endif %}

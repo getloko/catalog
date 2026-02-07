@@ -1,0 +1,49 @@
+version: 1
+
+paths:
+  init_root: init
+  environments_root: environments
+  app_bindings_dirname: apps
+  env_infra_dirname: infra
+  app_sources_root: apps
+
+objects:
+  fluxcd:
+    receivers:
+      # gitops_sync name is derived at runtime as "{gitops_namespace}-sync"
+      pr_previews: webapp-pr-previews
+    input_providers:
+      pr_previews: webapp-pull-requests
+
+files:
+  bootstrap_only:
+    fluxcd:
+      - git-repo.yaml
+      - flux-kustomization.yaml
+    argocd:
+      - application.yaml
+  skip:
+    argocd:
+      - repo-secret.yaml
+  destinations:
+    fluxcd:
+      "receiver-*.yaml": "{environment_infra_dir}/{basename}"
+      "echo.yaml": "{environment_apps_dir}/{basename}"
+    argocd:
+      "echo.yaml": "{environment_apps_dir}/{basename}"
+
+features:
+  sample_webapp:
+    bindings:
+      dev: webapp-dev.yaml
+      prod: webapp-prod.yaml
+      pr_previews: webapp-pr-previews.yaml
+    destinations:
+      fluxcd:
+        "sample-webapp/dev.yaml": "{environment_apps_dir}/{sample_webapp_binding_dev}"
+        "sample-webapp/prod.yaml": "{environment_apps_dir}/{sample_webapp_binding_prod}"
+        "sample-webapp/pr-preview.yaml": "{environment_apps_dir}/{sample_webapp_binding_pr_previews}"
+      argocd:
+        "sample-webapp/dev.yaml": "{environment_apps_dir}/{sample_webapp_binding_dev}"
+        "sample-webapp/prod.yaml": "{environment_apps_dir}/{sample_webapp_binding_prod}"
+        "sample-webapp/pr-preview.yaml": "{environment_apps_dir}/{sample_webapp_binding_pr_previews}"

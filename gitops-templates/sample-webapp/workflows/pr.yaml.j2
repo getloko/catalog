@@ -1,0 +1,190 @@
+name: PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - labeled
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - Dockerfile
+
+concurrency:
+  group: sample-webapp-pr-${{ '{{' }} forgejo.event.pull_request.number {{ '}}' }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: loko-runner-medium
+    env:
+      IMAGE: {{ container_registry_url }}/{{ app_repo }}
+    outputs:
+      should_build: ${{ '{{' }} steps.preview.outputs.should_build {{ '}}' }}
+      should_push: ${{ '{{' }} steps.preview.outputs.should_push {{ '}}' }}
+      pr_number: ${{ '{{' }} steps.preview.outputs.pr_number {{ '}}' }}
+      pr_sha: ${{ '{{' }} steps.preview.outputs.pr_sha {{ '}}' }}
+      tag: ${{ '{{' }} steps.preview.outputs.tag {{ '}}' }}
+      image_exists: ${{ '{{' }} steps.preview.outputs.image_exists {{ '}}' }}
+    steps:
+      - name: Decide preview state
+        id: preview
+        run: |
+          ACTION='${{ '{{' }} forgejo.event.action {{ '}}' }}'
+          PR='${{ '{{' }} forgejo.event.pull_request.number {{ '}}' }}'
+          PR_SHA='${{ '{{' }} forgejo.event.pull_request.head.sha {{ '}}' }}'
+          HAS_PREVIEW='${{ '{{' }} contains(forgejo.event.pull_request.labels.*.name, 'preview') {{ '}}' }}'
+          ADDED_LABEL='${{ '{{' }} forgejo.event.label.name || '' {{ '}}' }}'
+          TAG="pr-${PR}-${PR_SHA::7}"
+          IMAGE_EXISTS=false
+
+          if docker manifest inspect "${IMAGE}:${TAG}" >/dev/null 2>&1; then
+            IMAGE_EXISTS=true
+          fi
+
+          echo "pr_number=${PR}" >> "$FORGEJO_OUTPUT"
+          echo "pr_sha=${PR_SHA}" >> "$FORGEJO_OUTPUT"
+          echo "tag=${TAG}" >> "$FORGEJO_OUTPUT"
+          echo "image_exists=${IMAGE_EXISTS}" >> "$FORGEJO_OUTPUT"
+          echo "should_build=false" >> "$FORGEJO_OUTPUT"
+          echo "should_push=false" >> "$FORGEJO_OUTPUT"
+
+          SHOULD_CONSIDER_BUILD=false
+          if { [ "$ACTION" = "labeled" ] || [ "$ACTION" = "label_updated" ]; } && [ "$ADDED_LABEL" = "preview" ]; then
+            SHOULD_CONSIDER_BUILD=true
+          elif [ "$ACTION" = "opened" ] || [ "$ACTION" = "reopened" ] || [ "$ACTION" = "synchronize" ] || [ "$ACTION" = "synchronized" ]; then
+            SHOULD_CONSIDER_BUILD=true
+          fi
+
+          if [ "$SHOULD_CONSIDER_BUILD" = "true" ] && [ "$IMAGE_EXISTS" != "true" ]; then
+            echo "should_build=true" >> "$FORGEJO_OUTPUT"
+          fi
+
+          if [ "$HAS_PREVIEW" = "true" ] && [ "$IMAGE_EXISTS" != "true" ]; then
+            echo "should_push=true" >> "$FORGEJO_OUTPUT"
+          fi
+
+      - name: Show decision
+        run: |
+          echo "action=${{ '{{' }} forgejo.event.action {{ '}}' }}"
+          echo "pr_number=${{ '{{' }} steps.preview.outputs.pr_number {{ '}}' }}"
+          echo "pr_sha=${{ '{{' }} steps.preview.outputs.pr_sha {{ '}}' }}"
+          echo "tag=${{ '{{' }} steps.preview.outputs.tag {{ '}}' }}"
+          echo "image_exists=${{ '{{' }} steps.preview.outputs.image_exists {{ '}}' }}"
+          echo "should_build=${{ '{{' }} steps.preview.outputs.should_build {{ '}}' }}"
+          echo "should_push=${{ '{{' }} steps.preview.outputs.should_push {{ '}}' }}"
+
+  build:
+    needs: prepare
+    if: ${{ '{{' }} needs.prepare.outputs.should_build == 'true' || needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+    runs-on: loko-runner-medium
+    env:
+      GITEA_TOKEN: ${{ '{{' }} secrets.LOKO_GITEA_TOKEN {{ '}}' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ '{{' }} needs.prepare.outputs.pr_sha {{ '}}' }}
+
+      - name: Configure tea
+        run: |
+          echo "XDG_CONFIG_HOME=${RUNNER_TEMP}/tea-config" >> "$FORGEJO_ENV"
+          export XDG_CONFIG_HOME="${RUNNER_TEMP}/tea-config"
+          mkdir -p "${XDG_CONFIG_HOME}"
+          tea login rm loko-ci >/dev/null 2>&1 || true
+          tea login add \
+            --name loko-ci \
+            --url "{{ forgejo_base_url }}" \
+            --token "${GITEA_TOKEN}" \
+            --insecure \
+            --no-version-check
+
+      - name: Set image tag
+        run: |
+          echo "TAG=${{ '{{' }} needs.prepare.outputs.tag {{ '}}' }}" >> "$FORGEJO_ENV"
+          echo "IMAGE={{ container_registry_url }}/{{ app_repo }}" >> "$FORGEJO_ENV"
+
+      - name: Build image
+        if: ${{ '{{' }} needs.prepare.outputs.should_build == 'true' {{ '}}' }}
+        run: |
+          docker build --build-arg BUILD_ID=${{ '{{' }} env.TAG {{ '}}' }} -t ${{ '{{' }} env.IMAGE {{ '}}' }}:${{ '{{' }} env.TAG {{ '}}' }} .
+
+      - name: Push preview image
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        run: docker push ${{ '{{' }} env.IMAGE {{ '}}' }}:${{ '{{' }} env.TAG {{ '}}' }}
+
+{% if not gitless %}
+      - name: Mark preview built
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        run: |
+          PR='${{ '{{' }} needs.prepare.outputs.pr_number {{ '}}' }}'
+          tea issues edit "${PR}" --add-labels "preview-built" --repo {{ app_repo }} --login loko-ci
+
+      - name: Comment preview URL
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        run: |
+          PR='${{ '{{' }} needs.prepare.outputs.pr_number {{ '}}' }}'
+          tea comment "${PR}" "🚀 Preview deploying: https://webapp-pr-${PR}.{{ preview_domain }}" \
+            --repo {{ app_repo }} \
+            --login loko-ci
+{% endif %}
+{% if gitless %}
+
+      - name: Checkout gitops repo
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        uses: actions/checkout@v6
+        with:
+          repository: {{ forgejo_org }}/gitops
+          ref: main
+          path: gitops
+          token: ${{ '{{' }} secrets.LOKO_GITEA_TOKEN {{ '}}' }}
+
+      - name: Publish preview OCI artifact
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        run: |
+          PR='${{ '{{' }} needs.prepare.outputs.pr_number {{ '}}' }}'
+          PR_SHA='${{ '{{' }} needs.prepare.outputs.pr_sha {{ '}}' }}'
+          TAG='${{ '{{' }} needs.prepare.outputs.tag {{ '}}' }}'
+
+          # Substitute PR-specific variables before kustomize build
+          export PR_ID="pr-${PR}"
+          export PR_SHA_SHORT="${PR_SHA::7}"
+          export PREVIEW_DOMAIN="{{ preview_domain }}"
+          export REGISTRY_URL="{{ container_registry_url }}"
+          export APP_REPO="{{ app_repo }}"
+
+          cd gitops
+          sed \
+            -e "s|\${PR_ID}|${PR_ID}|g" \
+            -e "s|\${PR_SHA}|${PR_SHA_SHORT}|g" \
+            -e "s|\${PREVIEW_DOMAIN}|${PREVIEW_DOMAIN}|g" \
+            -e "s|\${REGISTRY_URL}|${REGISTRY_URL}|g" \
+            -e "s|\${APP_REPO}|${APP_REPO}|g" \
+            apps/sample-webapp/overlays/preview/kustomization.yaml \
+            > apps/sample-webapp/overlays/preview/kustomization.yaml.tmp
+          mv apps/sample-webapp/overlays/preview/kustomization.yaml.tmp \
+             apps/sample-webapp/overlays/preview/kustomization.yaml
+
+          mkdir -p bundle
+          kustomize build apps/sample-webapp/overlays/preview > bundle/manifests.yaml
+          tar -C bundle -czf webapp-pr.tgz .
+          oras push {{ sample_webapp_pr_oci_url | replace('oci://', '') }}:${TAG} \
+            --artifact-type application/vnd.getloko.gitops.app.v1 \
+            webapp-pr.tgz:application/vnd.oci.image.layer.v1.tar+gzip
+
+      - name: Mark preview built
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        run: |
+          PR='${{ '{{' }} needs.prepare.outputs.pr_number {{ '}}' }}'
+          tea issues edit "${PR}" --add-labels "preview-built" --repo {{ app_repo }} --login loko-ci
+
+      - name: Comment preview URL
+        if: ${{ '{{' }} success() && needs.prepare.outputs.should_push == 'true' {{ '}}' }}
+        run: |
+          PR='${{ '{{' }} needs.prepare.outputs.pr_number {{ '}}' }}'
+          tea comment "${PR}" "🚀 Preview deploying: https://webapp-pr-${PR}.{{ preview_domain }}" \
+            --repo {{ app_repo }} \
+            --login loko-ci
+{% endif %}

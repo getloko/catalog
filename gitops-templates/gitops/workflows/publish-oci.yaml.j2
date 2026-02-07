@@ -1,0 +1,24 @@
+name: Publish GitOps OCI Artifacts
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: loko-runner-medium
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Package environment manifests
+        run: |
+          mkdir -p bundle
+          cp -R {{ repo_layout.environment_dir }}/. bundle/
+          tar -C bundle -czf gitops-root.tgz .
+
+      - name: Publish OCI artifact
+        run: |
+          oras push {{ gitops_root_oci_url | replace('oci://', '') }}:{{ env_name }} \
+            --artifact-type application/vnd.getloko.gitops.root.v1 \
+            gitops-root.tgz:application/vnd.oci.image.layer.v1.tar+gzip

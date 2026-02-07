@@ -1,0 +1,23 @@
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: {{ gitops_namespace }}-sync
+  namespace: {{ gitops_namespace }}
+spec:
+  type: github
+  events:
+    - push
+{% if gitless %}
+    - package
+{% endif %}
+  secretRef:
+    name: webhook-token
+  resources:
+    - apiVersion: source.toolkit.fluxcd.io/v1
+{% if gitless %}
+      kind: OCIRepository
+{% else %}
+      kind: GitRepository
+{% endif %}
+      name: {{ gitops_namespace }}
+      namespace: {{ gitops_namespace }}

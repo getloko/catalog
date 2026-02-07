@@ -1,0 +1,525 @@
+# Development & Testing Tools
+workloads:
+  httpbin:
+    category: devtools
+    description: HTTP request & response testing service — inspect headers, auth, status codes, delays, and more
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: []
+    mappings: {}
+    secrets: {}
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: mccutchen/go-httpbin
+                # renovate: datasource=docker depName=mccutchen/go-httpbin
+                tag: "2.21.0"
+              env:
+                PORT: "8088"
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /status/200
+                      port: 8088
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /status/200
+                      port: 8088
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 8088
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: httpbin.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - hosts:
+                - httpbin.${LOKO_DOMAIN}
+      resources:
+        limits:
+          cpu: 200m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
+    endpoints:
+      - name: web
+        protocol: https
+        port: 8088
+        description: HTTP testing UI and API
+    connection-strings:
+      - name: web
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: infrastructure
+        target: web
+        path: /status/200
+        description: Check if httpbin is accessible
+
+  ministack:
+    category: devtools
+    description: Local AWS emulator — single endpoint for S3, SQS, SNS, DynamoDB, SES, Lambda and more
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: [4566]
+      storage:
+        size: 5Gi
+    mappings:
+      storage: persistence.data.size
+    secrets: {}  # MiniStack accepts static local credentials by default
+    presets:
+      controllers:
+        main:
+          type: statefulset
+          containers:
+            main:
+              image:
+                repository: ministackorg/ministack
+                # renovate: datasource=docker depName=ministackorg/ministack
+                tag: "1.3.33"
+              env:
+                AWS_ENDPOINT_URL: "http://localhost:4566"
+                AWS_DEFAULT_REGION: "us-east-1"
+                AWS_ACCESS_KEY_ID: "test"
+                AWS_SECRET_ACCESS_KEY: "test"
+                PERSIST_STATE: "1"
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /_ministack/health
+                      port: 4566
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /_ministack/ready
+                      port: 4566
+                    initialDelaySeconds: 5
+                    periodSeconds: 5
+      persistence:
+        data:
+          type: persistentVolumeClaim
+          accessMode: ReadWriteOnce
+          size: 5Gi
+          advancedMounts:
+            main:
+              main:
+                - path: /tmp/ministack-state
+                  subPath: state
+                - path: /tmp/ministack-data
+                  subPath: data
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 4566
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: ministack.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+            - host: aws.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - ministack.${LOKO_DOMAIN}
+                - aws.${LOKO_DOMAIN}
+    links:
+      - type: addon
+        target: stackport
+        auto-deploy: false
+        required: false
+        lifecycle-binding: true
+        config-template:
+          controllers:
+            main:
+              containers:
+                main:
+                  env:
+                    AWS_ENDPOINT_URL: "http://{{ parent.service_dns }}:4566"
+                    AWS_REGION: "us-east-1"
+                    AWS_ACCESS_KEY_ID: "test"
+                    AWS_SECRET_ACCESS_KEY: "test"
+      - type: addon
+        target: dynamodb-ui-ministack
+        auto-deploy: false
+        required: false
+        lifecycle-binding: true
+        config-template:
+          controllers:
+            main:
+              containers:
+                main:
+                  env:
+                    DYNAMO_ENDPOINT: "http://{{ parent.service_dns }}:4566"
+    endpoints:
+      - name: aws
+        protocol: https
+        port: 4566
+        description: AWS-compatible single endpoint for MiniStack services
+    connection-strings:
+      - name: endpoint
+        template: "https://${HOST}"
+      - name: aws-cli
+        template: "aws sts get-caller-identity --endpoint-url https://${HOST} --region us-east-1 --profile ${AWS_PROFILE}"
+    health-checks:
+      - name: http
+        type: http
+        tier: infrastructure
+        target: aws
+        path: /_ministack/health
+        description: Check if MiniStack gateway is healthy
+
+  dynamodb-ui-ministack:
+    category: ui
+    description: Web UI for DynamoDB tables in MiniStack (dynamodb-admin)
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: []
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: aaronshaf/dynamodb-admin
+                # renovate: datasource=docker depName=aaronshaf/dynamodb-admin
+                tag: "5.2.0"
+              env:
+                DYNAMO_ENDPOINT: "http://ministack.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local:4566"
+                AWS_REGION: "us-east-1"
+                AWS_ACCESS_KEY_ID: "test"
+                AWS_SECRET_ACCESS_KEY: "test"
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /
+                      port: 8001
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /
+                      port: 8001
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 8001
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: dynamodb-ui-ministack.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - dynamodb-ui-ministack.${LOKO_DOMAIN}
+    endpoints:
+      - name: web
+        protocol: https
+        port: 8001
+        description: DynamoDB Admin web UI (MiniStack variant)
+    connection-strings:
+      - name: web
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: client
+        target: web
+        path: /
+        description: Check if DynamoDB Admin UI is healthy
+
+  stackport:
+    category: ui
+    description: Universal AWS resource browser — browse and manage resources across 35 services (S3, DynamoDB, Lambda, SQS, IAM, EC2, Secrets Manager, CloudWatch Logs, and more)
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: []
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: davireis/stackport
+                # renovate: datasource=docker depName=davireis/stackport
+                tag: "0.3.2"
+              env:
+                AWS_ENDPOINT_URL: "http://ministack.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local:4566"
+                AWS_REGION: "us-east-1"
+                AWS_ACCESS_KEY_ID: "test"  # pragma: allowlist secret
+                AWS_SECRET_ACCESS_KEY: "test"  # pragma: allowlist secret
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /api/health
+                      port: 8080
+                    initialDelaySeconds: 10
+                    periodSeconds: 10
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /api/health
+                      port: 8080
+                    initialDelaySeconds: 5
+                    periodSeconds: 5
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 8080
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: stackport.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - stackport.${LOKO_DOMAIN}
+    endpoints:
+      - name: web
+        protocol: https
+        port: 8080
+        description: StackPort AWS resource browser UI
+    connection-strings:
+      - name: web
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: infrastructure
+        target: web
+        path: /api/health
+        description: Check if StackPort UI is accessible
+
+  mock-smtp-sms:
+    category: devtools
+    description: SMTP & SMS testing tool - captures emails (SMTP) and SMS with web UI (MOSIP mock service)
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: [8025]  # SMTP only — web UI and WebSocket go via ingress
+    mappings: {}
+    secrets: {}
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: mosipdev/mock-smtp
+                # renovate: datasource=docker depName=mosipdev/mock-smtp
+                tag: "v1.0.0"
+              env:
+                SERVER_HOST: "0.0.0.0"
+                SERVER_PORT: "8082"
+                SMTP_SERVER_PORT: "8025"
+                WS_SERVER_PORT: "8081"
+                # External WebSocket config - tells browser to connect via HTTPS ingress
+                WS_EX_PROTOCOL: "wss"
+                WS_EX_SERVER_PORT: "443"
+                WS_EX_BASE_PATH: "/ws"
+              probes:
+                liveness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /
+                      port: 8082
+                readiness:
+                  enabled: true
+                  custom: true
+                  spec:
+                    httpGet:
+                      path: /
+                      port: 8082
+      service:
+        main:
+          controller: main
+          ports:
+            http:
+              port: 8082
+            websocket:
+              port: 8081
+            smtp:
+              port: 8025
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: mock-smtp-sms.${LOKO_DOMAIN}
+              paths:
+                - path: /ws
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: websocket
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - mock-smtp-sms.${LOKO_DOMAIN}
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 50m
+          memory: 128Mi
+    endpoints:
+      - name: web
+        protocol: https
+        port: 8082
+        description: Web UI to view SMS and email messages (real-time via WebSocket)
+      - name: websocket
+        protocol: wss
+        port: 8081
+        description: WebSocket server for real-time updates (via ingress at /ws)
+      - name: smtp
+        protocol: tcp
+        port: 8025
+        description: SMTP server for email testing (captures all emails, never sends)
+    connection-strings:
+      - name: web-ui
+        template: "https://${HOST}"
+      - name: sms-api
+        template: "https://${HOST}/sendsms?mobiles={phone}&sender={app}&message={text}"
+      - name: smtp
+        template: "smtp://${HOST}:8025"
+    health-checks:
+      - name: web-ui
+        type: http
+        tier: infrastructure
+        target: web
+        path: /
+        description: Check if Web UI is accessible
+      - name: sms-send
+        type: command
+        tier: client
+        image: curlimages/curl:latest
+        command: ["curl", "-f", "https://${HOST}/sendsms?mobiles=+15551234567&sender=test&message=healthcheck"]
+        description: Test SMS sending API
+
+  it-tools:
+    category: devtools
+    description: Collection of handy online tools for developers
+    chart:
+      <<: *chart-bjw-s
+    defaults:
+      namespace: loko-system
+      ports: []
+    mappings: {}
+    secrets: {}
+    presets:
+      controllers:
+        main:
+          containers:
+            main:
+              image:
+                repository: corentinth/it-tools
+                # renovate: datasource=docker depName=corentinth/it-tools
+                tag: "2024.10.22-7ca5933"
+      service:
+        <<: *ui-service-http-80
+      ingress:
+        main:
+          <<: *ingress-traefik
+          hosts:
+            - host: it-tools.${LOKO_DOMAIN}
+              paths:
+                - path: /
+                  pathType: Prefix
+                  service:
+                    identifier: main
+                    port: http
+          tls:
+            - hosts:
+                - it-tools.${LOKO_DOMAIN}
+    endpoints:
+      - name: web
+        protocol: https
+        port: 80
+        description: IT Tools web interface
+    connection-strings:
+      - name: web
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: client
+        target: web
+        path: /
+        description: Check if IT Tools web UI is accessible

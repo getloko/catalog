@@ -1,0 +1,16 @@
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Receiver
+metadata:
+  name: webapp-pr-previews
+  namespace: {{ gitops_namespace }}
+spec:
+  type: github
+  events:
+    - pull_request
+  secretRef:
+    name: webhook-token
+  resources:
+    - apiVersion: fluxcd.controlplane.io/v1
+      kind: ResourceSetInputProvider
+      name: webapp-pull-requests
+      namespace: {{ gitops_namespace }}

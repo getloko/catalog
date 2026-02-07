@@ -1,0 +1,108 @@
+# GitOps Repository: {{ env_name }}
+
+This repository is managed by LoKO GitOps.
+
+## Structure
+
+```
+{{ repo_layout.environment_dir }}/    # Reconciled environment manifests
+├── kustomization.yaml          # Shared environment entrypoint
+├── {{ repo_layout.app_bindings_dirname }}/                       # App bindings for this environment
+│   ├── echo.yaml               # Seed application (echo.{{ apps_domain }})
+{% if include_sample_webapp %}
+│   ├── webapp-dev.yaml
+│   ├── webapp-prod.yaml
+│   └── webapp-pr-previews.yaml
+{% endif %}
+{% if provider == "fluxcd" %}
+└── {{ repo_layout.env_infra_dirname }}/                      # Environment-owned GitOps wiring
+    ├── receiver-gitops.yaml    # GitOps repo push receiver
+{% if include_sample_webapp %}
+    └── receiver-pr-previews.yaml
+{% endif %}
+{% endif %}
+{{ repo_layout.init_root }}/                           # Bootstrap-only controller objects
+{% if provider == "fluxcd" %}
+├── git-repo.yaml               # GitRepository CR
+└── flux-kustomization.yaml     # Flux root Kustomization CR
+{% else %}
+└── application.yaml            # Root ArgoCD Application CR
+{% endif %}
+{% if include_sample_webapp -%}
+apps/sample-webapp/                 # Sample web app Kubernetes manifests
+├── base/                       # Base manifests (Deployment, Service, Ingress)
+└── overlays/
+    ├── dev/                    # Dev environment overlay
+    ├── prod/                   # Prod environment overlay
+    └── preview/                # PR preview overlay
+{% endif %}
+.forgejo/workflows/
+└── hello.yaml                  # Sample Forgejo Actions workflow
+
+{% if include_sample_webapp %}Sample webapp CI workflows live in the `{{ app_repo }}` repository (`.forgejo/workflows/*`).
+{% endif %}
+```
+
+## Workflow
+
+1. Make changes to manifests in `{{ repo_layout.environment_dir }}/` or `{{ repo_layout.app_sources_root }}/`.
+2. Commit and push to this repository.
+3. {{ provider }} automatically reconciles the changes.
+4. Forgejo sends a webhook to trigger immediate reconciliation on push.
+{% if include_sample_webapp and provider == "argocd" %}
+5. For ArgoCD PR previews, Forgejo also sends `pull_request` events from `{{ app_repo }}` to the ApplicationSet controller webhook.
+{% endif %}
+
+This setup assumes one LoKO environment owns one Forgejo instance. GitOps repos,
+org secrets, and org webhooks are managed within that environment-local Forgejo org.
+{% if include_sample_webapp %}
+## PR Preview Environments
+
+PR preview environments are automatically created when a PR is opened in the
+`{{ app_repo }}` repository.
+
+By default, this is the sample web app repository used to validate your GitOps flow.
+You can replace it later with your own app repository while keeping the same structure.
+
+### Flow
+
+1. Developer opens a PR in `{{ forgejo_base_url }}/{{ app_repo }}`.
+2. CI builds the image tagged `pr-{N}-{sha}` to validate the PR when that exact tag is not already present in the registry.
+{% if provider == "fluxcd" %}
+3. Add the `preview` label to request a preview deploy.
+4. CI pushes the preview image for the current PR SHA after a successful build.
+5. CI sets `preview-built` after a successful push.
+6. Forgejo sends a `pull_request` webhook and the `ResourceSetInputProvider` selects PRs labeled `preview-built`.
+7. The `ResourceSet` creates a Namespace, GitRepository, and Kustomization for the PR.
+8. The preview is deployed at `webapp-pr-{N}.{{ preview_domain }}`.
+9. When the `preview-built` label is removed, or the PR is merged or closed, the preview namespace is pruned.
+{% else %}
+3. Add the `preview` label to request a preview deploy.
+4. CI pushes the preview image after a successful build and adds the `preview-built` label.
+5. Forgejo sends PR webhooks to the ApplicationSet controller for immediate refresh, with a 60-second poll as fallback.
+6. An ArgoCD `Application` named `webapp-pr-{N}` is created.
+7. The preview is deployed at `https://webapp-pr-{N}.{{ preview_domain }}`.
+8. When the PR is merged, closed, or the label changes, the preview Application is pruned.
+{% endif %}
+
+### Review Trigger Rules
+
+{% if provider == "fluxcd" %}
+- FluxCD previews are **label-driven**.
+- Flux receivers are split by responsibility: one for GitOps repo pushes and one for PR preview events.
+- Matching PR code changes are built only when the current `pr-{N}-{sha7}` image does not already exist.
+- `preview` means preview image push is requested after a successful build.
+- `preview-built` means the current PR SHA has a preview image ready to deploy.
+{% else %}
+- ArgoCD previews are **label-driven** (`preview-built`).
+- Matching PR code changes are built only when the current `pr-{N}-{sha7}` image does not already exist.
+- `preview` means preview image push is requested after a successful build.
+- `preview-built` means the preview OCI artifact is ready and the preview can be reconciled.
+- ArgoCD hard refresh workflows currently authenticate with the environment's
+  ArgoCD admin credential stored in the dedicated Forgejo org.
+{% endif %}
+{% endif %}
+## Useful Commands
+
+- `loko gitops status`: Check sync status.
+- `loko gitops destroy`: Tear down the GitOps setup.

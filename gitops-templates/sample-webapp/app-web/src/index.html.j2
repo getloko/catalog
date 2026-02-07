@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LoKO sample web app</title>
+  <link rel="stylesheet" href="style.css?v=__BUILD_ID__">
+</head>
+<body>
+  <main class="page">
+    <section class="hero-card">
+      <div class="top-row">
+        <p class="eyebrow">Loko GitOps Deploy</p>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle theme">🌙</button>
+      </div>
+      <h1>LoKO sample web app</h1>
+      <div class="meta-grid">
+        <div class="meta-item">
+          <span class="label">LoKO Environment</span>
+          <span class="value">{{ env_name }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Namespace</span>
+          <span id="namespace-value" class="value code">detecting...</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Provider</span>
+          <span class="value">{{ provider }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="label">Build</span>
+          <span class="value code">__BUILD_ID__</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      var key = 'loko-theme';
+      var root = document.documentElement;
+      var btn = document.getElementById('theme-toggle');
+
+      function preferred() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      function apply(theme) {
+        root.setAttribute('data-theme', theme);
+        btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+        btn.setAttribute('aria-label', theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
+      }
+
+      function namespaceFromHost(hostname) {
+        var appSuffix = '.{{ apps_domain }}';
+        var previewSuffix = '.{{ preview_domain }}';
+
+        if (!hostname) {
+          return 'unknown';
+        }
+        if (hostname === 'webapp-dev.{{ apps_domain }}') {
+          return 'webapp-dev';
+        }
+        if (hostname === 'webapp-prod.{{ apps_domain }}') {
+          return 'webapp-prod';
+        }
+        if (hostname.endsWith(previewSuffix)) {
+          var sub = hostname.slice(0, hostname.length - previewSuffix.length);
+          if (sub.indexOf('webapp-pr-') === 0) {
+            return sub;
+          }
+        }
+        if (hostname.endsWith(appSuffix)) {
+          var rootSub = hostname.slice(0, hostname.length - appSuffix.length);
+          if (rootSub.indexOf('webapp-pr-') === 0) {
+            return rootSub;
+          }
+        }
+        if (hostname.indexOf('webapp-pr-') === 0) {
+          return hostname.split('.')[0];
+        }
+        return 'unknown';
+      }
+
+      var namespaceEl = document.getElementById('namespace-value');
+      if (namespaceEl) {
+        namespaceEl.textContent = namespaceFromHost(window.location.hostname);
+      }
+
+      var initial = localStorage.getItem(key) || preferred();
+      apply(initial);
+
+      btn.addEventListener('click', function () {
+        var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        localStorage.setItem(key, next);
+        apply(next);
+      });
+    })();
+  </script>
+</body>
+</html>

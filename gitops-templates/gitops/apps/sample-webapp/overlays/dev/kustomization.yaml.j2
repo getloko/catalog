@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: webapp-dev
+resources:
+  - namespace.yaml
+  - ../../base
+images:
+  - name: webapp
+    newName: {{ container_registry_url }}/{{ app_repo }}
+    newTag: latest
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: webapp-dev
+    target:
+      kind: Deployment
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: webapp-dev
+    target:
+      kind: Service
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: webapp-dev
+      - op: replace
+        path: /spec/rules/0/host
+        value: webapp-dev.{{ apps_domain }}
+      - op: replace
+        path: /spec/tls/0/hosts/0
+        value: webapp-dev.{{ apps_domain }}
+      - op: replace
+        path: /spec/rules/0/http/paths/0/backend/service/name
+        value: webapp-dev
+    target:
+      kind: Ingress

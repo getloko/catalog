@@ -1,0 +1,104 @@
+# Sample Webapp
+
+This is the sample web app repository created by [LoKO](https://getloko.dev) to validate your GitOps flow.
+
+It is a minimal static web page served by BusyBox `httpd`, wired end-to-end with:
+
+- A container registry at `{{ container_registry_url }}`
+- A GitOps repository managed by {{ provider }}
+- Forgejo Actions CI running on `loko-runner`
+
+Once you are comfortable with the setup, replace this app with your own and keep the same GitOps structure.
+
+## Repository Structure
+
+```
+src/                    # Static web app source
+Dockerfile              # Builds the BusyBox `httpd` image
+.forgejo/workflows/
+├── build.yaml                  # Build and push image on push to main
+├── pr.yaml                     # Build and push PR preview image
+└── promote.yaml                # Promote image tag from dev to prod
+```
+
+## CI Workflows
+
+### Build (`build.yaml`)
+
+Triggers on push to `main` when `src/**` or `Dockerfile` changes.
+
+1. Builds the Docker image and tags it `main-<sha>`.
+2. Pushes the image to `{{ container_registry_url }}/{{ app_repo }}`.
+3. Clones the GitOps repo and updates the `newTag` in `apps/sample-webapp/overlays/dev/kustomization.yaml`.
+4. Commits and pushes — {{ provider }} picks up the change and deploys to dev.
+
+The app is available at: `https://webapp-dev.{{ apps_domain }}`
+
+### PR Build (`pr.yaml`)
+
+Triggers on pull requests to `main`.
+
+Builds a PR image tagged `pr-{N}-<sha>` to validate PR changes. The image is pushed only
+when a preview has been requested, and rebuild/push is skipped when that exact tag already
+exists in the registry.
+{% if provider == "fluxcd" %}
+**Flux — label-driven trigger:**
+Flux preview builds use two labels:
+
+- `preview`: preview requested, push allowed after a successful build
+- `preview-built`: preview image for the current PR SHA is ready to deploy
+
+The workflow builds on matching PR code changes only when the current `pr-{N}-<sha>` image
+does not already exist. When `preview` is present and the build succeeds, it pushes the
+image, sets `preview-built`, and the
+`ResourceSetInputProvider` in the GitOps repo selects that PR for preview deployment.
+
+To trigger a preview:
+1. Open a PR.
+2. CI builds the image on matching PR code changes if that exact PR image tag is not already in the registry.
+3. Add the `preview` label when you want to deploy a preview.
+4. If the PR is already open, comment `/preview` to trigger the preview build immediately.
+5. CI sets `preview-built` after a successful push.
+6. Flux creates a namespace and deploys the preview.
+7. Preview is available at `https://webapp-pr-{N}.{{ preview_domain }}`.
+8. Remove `preview-built`, or close/merge the PR, to tear down the preview.
+
+{% else %}
+**ArgoCD — title-based trigger:**
+The workflow builds on matching PR code changes only when the current `pr-{N}-<sha>` image
+does not already exist. It only pushes the image and marks the PR deployable when `preview`
+is present. The `ApplicationSet` gitea generator polls
+Forgejo every 5 minutes and creates a preview environment for PRs whose title ends with
+`[preview-built]`.
+
+To trigger a preview:
+1. Open a PR.
+2. CI builds the image on matching PR code changes if that exact PR image tag is not already in the registry.
+3. Add the `preview` label when you want to deploy a preview.
+4. If the PR is already open, comment `/preview` to trigger the preview build immediately.
+5. After a successful push, CI appends ` [preview-built]` to the PR title.
+6. ArgoCD creates an Application named `webapp-pr-{N}` within ~5 minutes.
+7. Preview is available at `https://webapp-pr-{N}.{{ preview_domain }}`.
+8. Close or merge the PR to prune the preview Application.
+{% endif %}
+
+### Promote (`promote.yaml`)
+
+Triggers manually via `workflow_dispatch`.
+
+Promotes an image tag from dev to prod by updating `apps/sample-webapp/overlays/prod/kustomization.yaml` in the GitOps repo. If no tag is provided, the current dev tag is used.
+
+## GitOps Repo
+
+The Kubernetes manifests and overlays for this app live in the GitOps repository:
+
+```
+apps/sample-webapp/
+├── base/               # Deployment, Service, Ingress
+└── overlays/
+    ├── dev/            # Dev overlay (updated automatically by CI)
+    ├── prod/           # Prod overlay (updated via promote workflow)
+    └── preview/        # PR preview overlay
+```
+
+The GitOps repo is at: `{{ forgejo_base_url }}/{{ forgejo_org }}/gitops`

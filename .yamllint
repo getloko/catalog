@@ -1,0 +1,54 @@
+---
+extends: default
+
+rules:
+  # Allow anchors (used for templates in catalog.yaml)
+  # Anchors can be defined in one file and referenced in included files
+  anchors:
+    forbid-undeclared-aliases: false
+    forbid-duplicated-anchors: false
+    forbid-unused-anchors: false
+
+  # Document start not required
+  document-start: disable
+
+  # Allow long lines (connection strings, URLs, etc.)
+  line-length:
+    max: 300
+    level: warning
+
+  # Allow multiple blank lines (including at end of file)
+  empty-lines:
+    max: 2
+    max-start: 0
+    max-end: 2
+
+  # Allow inline mappings for short lists
+  braces:
+    max-spaces-inside: 1
+
+  # Allow multiple spaces for alignment
+  colons:
+    max-spaces-after: 1
+
+  # Allow comments without space after #
+  comments:
+    min-spaces-from-content: 1
+
+  # Allow trailing spaces (useful in multi-line strings)
+  trailing-spaces: disable
+
+  # Allow empty values
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: false
+
+  # Indentation (2 spaces)
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+  # Allow truthy values like 'true', 'false', 'yes', 'no'
+  truthy:
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']
+    check-keys: false

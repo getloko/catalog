@@ -1,0 +1,104 @@
+# Collaboration & Productivity Workloads
+workloads:
+  excalidraw:
+    category: collaboration
+    description: Virtual collaborative whiteboard for sketching hand-drawn diagrams
+    chart:
+      repo: excalidraw
+      name: excalidraw/excalidraw
+      # renovate: datasource=helm depName=excalidraw repositoryUrl=https://pmoscode-helm.github.io/excalidraw
+      version: "0.18.0"
+    defaults:
+      namespace: loko-system
+      ports: []
+    mappings: {}
+    presets:
+      excalidraw:
+        service:
+          type: ClusterIP
+          port: 80
+        ingress:
+          enabled: true
+          <<: *ingress-traefik
+          className: traefik
+          host: excalidraw.${LOKO_DOMAIN}
+          path: /
+          type: Prefix
+          tls:
+            host: excalidraw.${LOKO_DOMAIN}
+        # Point collab server URL to the in-cluster service (browser connects via same ingress)
+        customCollabServerURL: "https://excalidraw.${LOKO_DOMAIN}"
+      collabServer:
+        enabled: true
+        service:
+          type: ClusterIP
+          port: 3002
+    endpoints:
+      - name: web-ui
+        protocol: https
+        port: 443
+        description: Excalidraw web interface
+    connection-strings:
+      - name: web-ui
+        template: "https://${HOST}"
+    health-checks:
+      - name: http
+        type: http
+        tier: infrastructure
+        target: web-ui
+        path: /
+        description: Check if Excalidraw web UI is accessible
+
+  penpot:
+    category: collaboration
+    description: Open-source design and prototyping platform (Figma alternative)
+    chart:
+      repo: penpot
+      name: penpot/penpot
+      # renovate: datasource=helm depName=penpot repositoryUrl=https://helm.penpot.app
+      version: "0.38.0"
+    defaults:
+      namespace: loko-system
+      ports: []
+      storage:
+        size: 20Gi
+    mappings:
+      storage: persistence.assets.size
+    secrets: {}  # Auth managed via registration; PostgreSQL credentials in subchart
+    presets:
+      config:
+        publicUri: "https://penpot.${LOKO_DOMAIN}"
+        # Disable email verification and SMTP for local dev; enable core login features
+        flags: "enable-registration enable-login-with-password disable-email-verification"
+        telemetryEnabled: false
+      # Enable bundled subcharts (auto-configure connection URIs)
+      global:
+        postgresqlEnabled: true
+        valkeyEnabled: true
+      ingress:
+        enabled: true
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+        className: traefik
+        path: /
+        hosts:
+          - penpot.${LOKO_DOMAIN}
+        tls:
+          - hosts:
+              - penpot.${LOKO_DOMAIN}
+    endpoints:
+      - name: web-ui
+        protocol: https
+        port: 443
+        description: Penpot web interface
+    connection-strings:
+      - name: web-ui
+        template: "https://${HOST}"
+    health-checks:
+      - name: ui
+        type: http
+        tier: client
+        target: web-ui
+        path: /
+        description: Check if Penpot web UI is accessible

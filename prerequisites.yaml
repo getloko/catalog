@@ -1,0 +1,94 @@
+# ============================================================================
+# Prerequisite Tools
+# CLI binaries and tool manager dependencies
+# ============================================================================
+tools:
+  docker:
+    description: "Docker container runtime"
+    required: true
+    install-url: "https://docs.docker.com/get-docker/"
+    check-args: ["--version"]
+
+  kind:
+    description: "KinD (Kubernetes in Docker)"
+    required: true
+    # renovate: datasource=github-releases depName=kubernetes-sigs/kind
+    version: "0.27.0"
+    mise-name: "kind"
+    install-url: "https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
+    check-args: ["version"]
+
+  kubectl:
+    description: "Kubernetes CLI"
+    required: true
+    # renovate: datasource=github-releases depName=kubernetes/kubernetes
+    version: "1.32.2"
+    mise-name: "kubectl"
+    install-url: "https://kubernetes.io/docs/tasks/tools/"
+    check-args: ["version", "--client"]
+
+  helm:
+    description: "Helm package manager"
+    required: true
+    # renovate: datasource=github-releases depName=helm/helm
+    version: "3.17.1"
+    mise-name: "helm"
+    install-url: "https://helm.sh/docs/intro/install/"
+    check-args: ["version", "--short"]
+
+  helmfile:
+    description: "Helmfile declarative spec"
+    required: true
+    # renovate: datasource=github-releases depName=helmfile/helmfile
+    version: "0.171.0"
+    mise-name: "helmfile"
+    install-url: "https://github.com/helmfile/helmfile#installation"
+    check-args: ["--version"]
+
+  cfssl:
+    description: "Cloudflare PKI / TLS toolkit"
+    required: true
+    # renovate: datasource=github-releases depName=cloudflare/cfssl
+    version: "1.6.5"
+    mise-name: "cfssl"
+    install-url: "https://github.com/cloudflare/cfssl#installation"
+    check-args: ["version"]
+
+  cfssljson:
+    description: "Cloudflare JSON cert generator"
+    required: true
+    # renovate: datasource=github-releases depName=cloudflare/cfssl
+    version: "1.6.5"
+    mise-name: "cfssl"
+    install-url: "https://github.com/cloudflare/cfssl#installation"
+    check-args: ["-version"]
+
+  stern:
+    description: "Multi-pod log tailing"
+    required: false
+    # renovate: datasource=github-releases depName=stern/stern
+    version: "1.32.0"
+    mise-name: "stern"
+    install-url: "https://github.com/stern/stern#installation"
+    check-args: ["--version"]
+
+  aws:
+    description: "AWS CLI (for S3 storage)"
+    required: false
+    # renovate: datasource=github-releases depName=aws/aws-cli
+    version: "2.24.18"
+    mise-name: "awscli"
+    install-url: "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
+    check-args: ["--version"]
+
+  mise:
+    description: "Mise (tool version manager)"
+    required: false
+    install-url: "https://mise.jdx.dev/getting-started.html"
+    check-args: ["--version"]
+
+  ngrok:
+    description: "Ngrok (tunnel sharing)"
+    required: false
+    install-url: "https://ngrok.com/download"
+    check-args: ["version"]

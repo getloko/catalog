@@ -11,6 +11,8 @@ helm-repositories:
     url: https://kubernetes-sigs.github.io/metrics-server/
 
   # Workload repos
+  - name: stalwart
+    url: https://stalwartlabs.github.io/helm-charts/
   - name: groundhog2k
     url: https://groundhog2k.github.io/helm-charts/
   - name: cloudpirates

@@ -503,6 +503,111 @@ workloads:
         <<: *health-check-port
         target: sns
         description: Check if goaws API port is open
+  stalwart:
+    category: messaging
+    description: All-in-one mail server — SMTP, IMAP, JMAP with built-in spam filtering, DKIM/DMARC/SPF and a web admin UI
+    chart:
+      repo: stalwart
+      name: stalwart/stalwart-mail
+      # renovate: datasource=helm depName=stalwart-mail repositoryUrl=https://stalwartlabs.github.io/helm-charts
+      version: "0.9.4"
+    defaults:
+      namespace: loko-system
+      mx-record: true
+      ports: [25, 143, 465, 587, 993]  # SMTP + IMAP ports via tunnel; MX record added to dnsmasq
+      storage:
+        size: 10Gi
+    mappings:
+      storage: persistence.size
+      secrets.admin.password: env.STALWART_ADMIN_PASSWORD  # pragma: allowlist secret
+    secrets:
+      admin:
+        name: admin
+        type: user-pass
+        description: Admin credentials for Stalwart web interface
+        fields:
+          - name: username
+            type: static
+            value: admin
+            sensitive: false
+          - name: password
+            type: password
+            length: 16
+        mappings:
+          password: env.STALWART_ADMIN_PASSWORD  # pragma: allowlist secret
+    endpoints:
+      - name: smtp
+        protocol: tcp
+        port: 25
+        description: SMTP (with STARTTLS)
+      - name: submission
+        protocol: tcp
+        port: 587
+        description: SMTP Submission (STARTTLS)
+      - name: smtps
+        protocol: tcp
+        port: 465
+        description: SMTPS — implicit TLS
+      - name: imap
+        protocol: tcp
+        port: 143
+        description: IMAP (with STARTTLS)
+      - name: imaps
+        protocol: tcp
+        port: 993
+        description: IMAPS — implicit TLS
+      - name: admin
+        protocol: https
+        port: 8080
+        description: Web admin UI
+    connection-strings:
+      - name: smtp
+        template: "smtp://${HOST}:25"
+      - name: submission
+        template: "smtp://${HOST}:587"
+      - name: imaps
+        template: "imaps://${HOST}:993"
+    health-checks:
+      - name: port
+        <<: *health-check-port
+        target: smtp
+        description: Check if SMTP port is open
+      - name: admin
+        type: http
+        tier: client
+        target: admin
+        path: /
+        description: Check if admin UI is accessible
+    presets:
+      service:
+        type: ClusterIP
+      persistence:
+        enabled: true
+        size: 10Gi
+      # Mount loko wildcard TLS certificate for STARTTLS/implicit TLS on mail ports
+      extraVolumes:
+        - name: loko-tls
+          secret:
+            secretName: loko-wildcard-tls
+      extraVolumeMounts:
+        - name: loko-tls
+          mountPath: /opt/stalwart/certs
+          readOnly: true
+      ingress:
+        enabled: true
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.tls: "true"
+        hosts:
+          - host: mail.${LOKO_DOMAIN}
+            paths:
+              - path: /
+                pathType: Prefix
+        tls:
+          - hosts:
+              - mail.${LOKO_DOMAIN}
+
   nats-ui:
     category: ui
     description: Web UI for NATS monitoring (nats-dashboard)

@@ -514,7 +514,10 @@ workloads:
     defaults:
       namespace: loko-system
       mx-record: true
-      ports: [25, 143, 465, 587, 993]  # SMTP + IMAP ports via tunnel; MX record added to dnsmasq
+      # Non-privileged host ports; service remaps 1465→465 and 1993→993 inside the cluster.
+      # Port 25 (MX relay) is not needed for a local dev setup; 465/993 implicit TLS
+      # is sufficient — no need for STARTTLS variants (587/143) alongside implicit TLS.
+      ports: [1465, 1993]
       storage:
         size: 10Gi
     mappings:
@@ -536,42 +539,28 @@ workloads:
         mappings:
           password: env.STALWART_ADMIN_PASSWORD  # pragma: allowlist secret
     endpoints:
-      - name: smtp
-        protocol: tcp
-        port: 25
-        description: SMTP (with STARTTLS)
-      - name: submission
-        protocol: tcp
-        port: 587
-        description: SMTP Submission (STARTTLS)
       - name: smtps
         protocol: tcp
-        port: 465
-        description: SMTPS — implicit TLS
-      - name: imap
-        protocol: tcp
-        port: 143
-        description: IMAP (with STARTTLS)
+        port: 1465
+        description: SMTPS — implicit TLS (host port 1465 → cluster port 465)
       - name: imaps
         protocol: tcp
-        port: 993
-        description: IMAPS — implicit TLS
+        port: 1993
+        description: IMAPS — implicit TLS (host port 1993 → cluster port 993)
       - name: admin
         protocol: https
         port: 8080
         description: Web admin UI
     connection-strings:
-      - name: smtp
-        template: "smtp://${HOST}:25"
-      - name: submission
-        template: "smtp://${HOST}:587"
+      - name: smtps
+        template: "smtps://${HOST}:1465"
       - name: imaps
-        template: "imaps://${HOST}:993"
+        template: "imaps://${HOST}:1993"
     health-checks:
       - name: port
         <<: *health-check-port
-        target: smtp
-        description: Check if SMTP port is open
+        target: smtps
+        description: Check if SMTPS port is open
       - name: admin
         type: http
         tier: client
@@ -579,8 +568,23 @@ workloads:
         path: /
         description: Check if admin UI is accessible
     presets:
+      # Service remaps non-privileged host ports to standard container ports.
+      # loko tunnel: host:1465 → svc:1465 → pod:465, host:1993 → svc:1993 → pod:993
       service:
         type: ClusterIP
+        ports:
+          - name: smtps
+            port: 1465
+            targetPort: 465
+            protocol: TCP
+          - name: imaps
+            port: 1993
+            targetPort: 993
+            protocol: TCP
+          - name: http-admin
+            port: 8080
+            targetPort: 8080
+            protocol: TCP
       persistence:
         enabled: true
         size: 10Gi

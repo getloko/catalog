@@ -509,7 +509,7 @@ workloads:
     chart:
       repo: stalwart
       name: stalwart/stalwart-mail
-      # renovate: datasource=helm depName=stalwart-mail repositoryUrl=oci://codeberg.org/wrenix/helm-charts
+      # renovate: datasource=docker depName=codeberg.org/wrenix/helm-charts/stalwart-mail
       version: "1.0.7"
     defaults:
       namespace: loko-system

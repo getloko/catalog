@@ -84,6 +84,8 @@ tools:
   mise:
     description: "Mise (tool version manager)"
     required: false
+    # renovate: datasource=github-releases depName=jdx/mise
+    version: "2026.9.6"
     install-url: "https://mise.jdx.dev/getting-started.html"
     check-args: ["--version"]
 

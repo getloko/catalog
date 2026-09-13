@@ -7,7 +7,7 @@ workloads:
       repo: forgejo-helm
       name: forgejo-helm/forgejo
       # renovate: datasource=docker depName=code.forgejo.org/forgejo-helm/forgejo
-      version: "16.2.1"
+      version: "16.2.2"
     defaults:
       namespace: loko-system
       ports: []  # Traffic goes through Traefik ingress on 443
@@ -188,7 +188,7 @@ workloads:
       repo: terrakube
       name: terrakube/terrakube
       # renovate: datasource=helm depName=terrakube repositoryUrl=https://terrakube-io.github.io/terrakube-helm-chart
-      version: "4.6.6"
+      version: "4.7.10"
     defaults:
       namespace: loko-system
       ports: []

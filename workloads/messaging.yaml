@@ -8,7 +8,7 @@ workloads:
       repo: groundhog2k
       name: groundhog2k/rabbitmq
       # renovate: datasource=helm depName=rabbitmq repositoryUrl=https://groundhog2k.github.io/helm-charts
-      version: "2.2.6"
+      version: "2.3.8"
     defaults:
       namespace: loko-system
       ports: [5672]
@@ -92,7 +92,7 @@ workloads:
       repo: nats
       name: nats/nats
       # renovate: datasource=helm depName=nats repositoryUrl=https://nats-io.github.io/k8s/helm/charts
-      version: "2.12.6"
+      version: "2.14.6"
     defaults:
       namespace: loko-system
       ports: [4222]  # Client TCP only — monitoring (8223) goes via ingress
@@ -180,7 +180,7 @@ workloads:
       repo: redpanda
       name: redpanda/redpanda
       # renovate: datasource=helm depName=redpanda repositoryUrl=https://charts.redpanda.com
-      version: "26.1.2"
+      version: "26.2.3"
     skip-name-override: true  # Redpanda chart has strict schema; uses fullnameOverride (lowercase n)
     skip-scheduling-overrides: true  # Redpanda chart has strict schema; rejects top-level nodeSelector/tolerations
     defaults:
@@ -305,7 +305,7 @@ workloads:
               image:
                 repository: softwaremill/elasticmq-native
                 # renovate: datasource=docker depName=softwaremill/elasticmq-native
-                tag: 1.7.0
+                tag: 1.7.1
               probes:
                 liveness:
                   enabled: true
@@ -325,7 +325,7 @@ workloads:
               image:
                 repository: softwaremill/elasticmq-ui
                 # renovate: datasource=docker depName=softwaremill/elasticmq-ui
-                tag: "1.7.0"
+                tag: "1.7.1"
               env:
                 SQS_ENDPOINT: "http://elasticmq:9324"
       persistence:

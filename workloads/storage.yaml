@@ -7,7 +7,7 @@ workloads:
       repo: datahub-local
       name: datahub-local/garage
       # renovate: datasource=helm depName=garage repositoryUrl=https://datahub-local.github.io/garage-helm
-      version: "0.4.1"
+      version: "0.8.0"
     defaults:
       namespace: loko-system
       ports: []

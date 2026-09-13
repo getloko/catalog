@@ -8,7 +8,7 @@ workloads:
       repo: argo
       name: argo/argo-cd
       # renovate: datasource=helm depName=argo-cd repositoryUrl=https://argoproj.github.io/argo-helm
-      version: "9.4.17"
+      version: "9.7.1"
     defaults:
       namespace: loko-system
       ports: []

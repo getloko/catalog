@@ -13,7 +13,7 @@ tools:
     description: "KinD (Kubernetes in Docker)"
     required: true
     # renovate: datasource=github-releases depName=kubernetes-sigs/kind
-    version: "0.27.0"
+    version: "0.33.0"
     mise-name: "kind"
     install-url: "https://kind.sigs.k8s.io/docs/user/quick-start/#installation"
     check-args: ["version"]
@@ -22,7 +22,7 @@ tools:
     description: "Kubernetes CLI"
     required: true
     # renovate: datasource=github-releases depName=kubernetes/kubernetes
-    version: "1.32.2"
+    version: "1.37.0"
     mise-name: "kubectl"
     install-url: "https://kubernetes.io/docs/tasks/tools/"
     check-args: ["version", "--client"]
@@ -31,7 +31,7 @@ tools:
     description: "Helm package manager"
     required: true
     # renovate: datasource=github-releases depName=helm/helm
-    version: "3.17.1"
+    version: "3.22.0"
     mise-name: "helm"
     install-url: "https://helm.sh/docs/intro/install/"
     check-args: ["version", "--short"]
@@ -67,7 +67,7 @@ tools:
     description: "Multi-pod log tailing"
     required: false
     # renovate: datasource=github-releases depName=stern/stern
-    version: "1.32.0"
+    version: "1.34.0"
     mise-name: "stern"
     install-url: "https://github.com/stern/stern#installation"
     check-args: ["--version"]

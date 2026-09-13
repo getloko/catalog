@@ -56,7 +56,7 @@ workloads:
       repo: penpot
       name: penpot/penpot
       # renovate: datasource=helm depName=penpot repositoryUrl=https://helm.penpot.app
-      version: "0.38.0"
+      version: "0.43.0"
     defaults:
       namespace: loko-system
       ports: []

@@ -7,7 +7,7 @@ workloads:
       repo: groundhog2k
       name: groundhog2k/valkey
       # renovate: datasource=helm depName=valkey repositoryUrl=https://groundhog2k.github.io/helm-charts
-      version: "2.2.5"
+      version: "2.3.4"
     defaults:
       namespace: loko-system
       ports: [6379]
@@ -63,7 +63,7 @@ workloads:
       repo: cloudpirates
       name: cloudpirates/memcached
       # renovate: datasource=helm depName=memcached repositoryUrl=https://cloudpirates-io.github.io/helm-charts
-      version: "0.11.1"
+      version: "0.14.9"
     defaults:
       namespace: loko-system
       ports: [11211]
@@ -132,7 +132,7 @@ workloads:
               image:
                 repository: robinn/phpcacheadmin
                 # renovate: datasource=docker depName=robinn/phpcacheadmin
-                tag: "2.5.0"
+                tag: "2.7.1"
               env:
                 # Redis/Valkey connection
                 PCA_REDIS_0_NAME: "Valkey"

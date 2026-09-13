@@ -292,23 +292,26 @@
       <pre><code><span class="comment"># List all available workloads</span>
 <span class="cmd">loko</span> <span class="arg">catalog list</span>
 
-<span class="comment"># Search by name or tag</span>
+<span class="comment"># Search by name or description</span>
 <span class="cmd">loko</span> <span class="arg">catalog search</span> postgres
 
-<span class="comment"># Show workload details and available presets</span>
-<span class="cmd">loko</span> <span class="arg">catalog info</span> postgres
+<span class="comment"># Show catalog metadata (location, workload/component counts)</span>
+<span class="cmd">loko</span> <span class="arg">catalog info</span>
 
-<span class="comment"># Install a workload into your environment</span>
-<span class="cmd">loko</span> <span class="arg">workload install</span> postgres
+<span class="comment"># Show one workload's catalog entry (chart, ports, links, presets)</span>
+<span class="cmd">loko</span> <span class="arg">workloads info</span> postgres
 
-<span class="comment"># Install with a specific preset</span>
-<span class="cmd">loko</span> <span class="arg">workload install</span> postgres <span class="arg">--preset</span> postgres-ui
+<span class="comment"># Add a workload and deploy it immediately</span>
+<span class="cmd">loko</span> <span class="arg">workloads add</span> postgres <span class="arg">--now</span>
+
+<span class="comment"># Add a linked UI companion workload (e.g. pgAdmin for postgres)</span>
+<span class="cmd">loko</span> <span class="arg">workloads add</span> postgres-ui <span class="arg">--now</span>
 
 <span class="comment"># Sync catalog from remote (update to latest)</span>
 <span class="cmd">loko</span> <span class="arg">catalog sync</span>
 
 <span class="comment"># Point to a custom catalog source</span>
-<span class="cmd">loko</span> <span class="arg">catalog use</span> <span class="arg">https://raw.githubusercontent.com/getloko/catalog/main/catalog.yaml</span></code></pre>
+<span class="cmd">loko</span> <span class="arg">catalog sync</span> <span class="arg">--url</span> https://raw.githubusercontent.com/getloko/catalog/main/catalog.yaml</code></pre>
     </section>
 
     <section>
@@ -326,7 +329,7 @@
   <div class="container">
     <p>
       <a href="https://github.com/getloko/catalog">getloko/catalog</a> ·
-      <a href="https://github.com/getloko/loko">getloko/loko</a> ·
+      <a href="https://github.com/getloko/loko-releases">getloko/loko-releases</a> ·
       <a href="https://getloko.github.io/">LoKO Docs</a>
     </p>
   </div>

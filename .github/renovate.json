@@ -19,6 +19,13 @@
       ],
       "automerge": true,
       "automergeType": "pr"
+    },
+    {
+      "description": "ngrok's version comes from its official Homebrew cask file (plain-text Ruby, not a clean releases feed) -- semver-coerced so only the actual 'version \"X.Y.Z\"' line resolves, not every line the custom datasource sees.",
+      "matchPackageNames": [
+        "ngrok"
+      ],
+      "versioning": "semver-coerced"
     }
   ],
   "schedule": [
@@ -46,5 +53,11 @@
         "# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>[^\\s]+)\\s+image:\\s+[^:]+:(?<currentValue>[^\\s\"]+)"
       ]
     }
-  ]
+  ],
+  "customDatasources": {
+    "ngrok": {
+      "defaultRegistryUrlTemplate": "https://raw.githubusercontent.com/ngrok/homebrew-ngrok/main/Casks/ngrok.rb",
+      "format": "plain"
+    }
+  }
 }

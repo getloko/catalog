@@ -92,5 +92,7 @@ tools:
   ngrok:
     description: "Ngrok (tunnel sharing)"
     required: false
+    # renovate: datasource=custom.ngrok depName=ngrok
+    version: "3.39.11"
     install-url: "https://ngrok.com/download"
     check-args: ["version"]

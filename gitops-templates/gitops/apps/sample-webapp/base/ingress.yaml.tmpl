@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: placeholder.{{ apps_domain }}
+    - host: placeholder.{{ .apps_domain }}
       http:
         paths:
           - path: /
@@ -20,4 +20,4 @@ spec:
                   number: 80
   tls:
     - hosts:
-        - placeholder.{{ apps_domain }}
+        - placeholder.{{ .apps_domain }}

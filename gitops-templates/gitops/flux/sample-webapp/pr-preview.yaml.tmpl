@@ -4,13 +4,13 @@ apiVersion: fluxcd.controlplane.io/v1
 kind: ResourceSetInputProvider
 metadata:
   name: webapp-pull-requests
-  namespace: {{ gitops_namespace }}
+  namespace: {{ .gitops_namespace }}
   annotations:
     fluxcd.controlplane.io/reconcile: "enabled"
     fluxcd.controlplane.io/reconcileEvery: "5m"
 spec:
   type: GiteaPullRequest
-  url: {{ forgejo_base_url }}/{{ app_repo }}
+  url: {{ .forgejo_base_url }}/{{ .app_repo }}
   secretRef:
     name: forgejo-gitops-auth
   certSecretRef:
@@ -25,7 +25,7 @@ apiVersion: fluxcd.controlplane.io/v1
 kind: ResourceSet
 metadata:
   name: webapp-pr-previews
-  namespace: {{ gitops_namespace }}
+  namespace: {{ .gitops_namespace }}
 spec:
   serviceAccountName: kustomize-controller
   inputsFrom:
@@ -38,56 +38,56 @@ spec:
       metadata:
         name: webapp-pr-<< inputs.id >>
     - apiVersion: source.toolkit.fluxcd.io/v1
-{% if gitless %}
+{{- if .gitless }}
       kind: OCIRepository
-{% else %}
+{{- else }}
       kind: GitRepository
-{% endif %}
+{{- end }}
       metadata:
         name: webapp-pr-<< inputs.id >>
-        namespace: {{ gitops_namespace }}
+        namespace: {{ .gitops_namespace }}
       spec:
         interval: 5m
-{% if gitless %}
-        url: {{ sample_webapp_pr_oci_url }}
+{{- if .gitless }}
+        url: {{ .sample_webapp_pr_oci_url }}
         ref:
           tag: pr-<< inputs.id >>-<< printf "%.7s" inputs.sha >>
         certSecretRef:
           name: forgejo-ca-cert
-{% else %}
-        url: {{ repo_url }}
+{{- else }}
+        url: {{ .repo_url }}
         ref:
           branch: main
         secretRef:
           name: forgejo-gitops-auth
-{% endif %}
+{{- end }}
     - apiVersion: kustomize.toolkit.fluxcd.io/v1
       kind: Kustomization
       metadata:
         name: webapp-pr-<< inputs.id >>
-        namespace: {{ gitops_namespace }}
+        namespace: {{ .gitops_namespace }}
       spec:
         interval: 5m
         prune: true
-{% if gitless %}
+{{- if .gitless }}
         path: ./
-{% else %}
+{{- else }}
         path: ./apps/sample-webapp/overlays/preview
-{% endif %}
+{{- end }}
         sourceRef:
-{% if gitless %}
+{{- if .gitless }}
           kind: OCIRepository
-{% else %}
+{{- else }}
           kind: GitRepository
-{% endif %}
+{{- end }}
           name: webapp-pr-<< inputs.id >>
-{% if not gitless %}
+{{- if not .gitless }}
         postBuild:
           substitute:
             PR_ID: "pr-<< inputs.id >>"
             PR_SHA: "<< printf \"'%.7s'\" inputs.sha >>"
-            PREVIEW_DOMAIN: "{{ preview_domain }}"
-            REGISTRY_URL: "{{ container_registry_url }}"
-            APP_REPO: "{{ app_repo }}"
-{% endif %}
+            PREVIEW_DOMAIN: "{{ .preview_domain }}"
+            REGISTRY_URL: "{{ .container_registry_url }}"
+            APP_REPO: "{{ .app_repo }}"
+{{- end }}
         targetNamespace: webapp-pr-<< inputs.id >>

@@ -2,7 +2,7 @@ apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
   name: echo
-  namespace: {{ gitops_namespace }}
+  namespace: {{ .gitops_namespace }}
 spec:
   project: default
   source:
@@ -19,15 +19,15 @@ spec:
             traefik.ingress.kubernetes.io/router.entrypoints: websecure
             traefik.ingress.kubernetes.io/router.tls: "true"
           hosts:
-            - host: echo.{{ apps_domain }}
+            - host: echo.{{ .apps_domain }}
               paths:
                 - /
           tls:
             - hosts:
-                - echo.{{ apps_domain }}
+                - echo.{{ .apps_domain }}
   destination:
     server: https://kubernetes.default.svc
-    namespace: {{ gitops_namespace }}
+    namespace: {{ .gitops_namespace }}
   syncPolicy:
     automated:
       prune: true

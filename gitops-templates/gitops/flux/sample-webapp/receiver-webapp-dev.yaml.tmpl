@@ -1,9 +1,9 @@
-{% if gitless %}
+{{- if .gitless }}
 apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Receiver
 metadata:
   name: webapp-prod-sync
-  namespace: {{ gitops_namespace }}
+  namespace: {{ .gitops_namespace }}
 spec:
   type: generic
   events:
@@ -14,5 +14,5 @@ spec:
     - apiVersion: source.toolkit.fluxcd.io/v1
       kind: OCIRepository
       name: webapp-prod
-      namespace: {{ gitops_namespace }}
-{% endif %}
+      namespace: {{ .gitops_namespace }}
+{{- end }}

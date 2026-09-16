@@ -14,36 +14,36 @@ jobs:
 
       - name: Set image tag
         run: |
-          SHA="${{ '{{' }} forgejo.sha {{ '}}' }}"
+          SHA="${{ "{{" }} forgejo.sha {{ "}}" }}"
           echo "TAG=main-${SHA::7}" >> "$FORGEJO_ENV"
-          echo "IMAGE={{ container_registry_url }}/{{ app_repo }}" >> "$FORGEJO_ENV"
+          echo "IMAGE={{ .container_registry_url }}/{{ .app_repo }}" >> "$FORGEJO_ENV"
 
       - name: Build and push
         run: |
-          docker build --build-arg BUILD_ID=${{ '{{' }} env.TAG {{ '}}' }} -t ${{ '{{' }} env.IMAGE {{ '}}' }}:${{ '{{' }} env.TAG {{ '}}' }} -t ${{ '{{' }} env.IMAGE {{ '}}' }}:latest .
-          docker push ${{ '{{' }} env.IMAGE {{ '}}' }}:${{ '{{' }} env.TAG {{ '}}' }}
-          docker push ${{ '{{' }} env.IMAGE {{ '}}' }}:latest
+          docker build --build-arg BUILD_ID=${{ "{{" }} env.TAG {{ "}}" }} -t ${{ "{{" }} env.IMAGE {{ "}}" }}:${{ "{{" }} env.TAG {{ "}}" }} -t ${{ "{{" }} env.IMAGE {{ "}}" }}:latest .
+          docker push ${{ "{{" }} env.IMAGE {{ "}}" }}:${{ "{{" }} env.TAG {{ "}}" }}
+          docker push ${{ "{{" }} env.IMAGE {{ "}}" }}:latest
 
       - name: Checkout gitops repo
         uses: actions/checkout@v6
         with:
-          repository: {{ forgejo_org }}/gitops
+          repository: {{ .forgejo_org }}/gitops
           ref: main
           path: gitops
-          token: ${{ '{{' }} secrets.LOKO_GITEA_TOKEN {{ '}}' }}
+          token: ${{ "{{" }} secrets.LOKO_GITEA_TOKEN {{ "}}" }}
 
       - name: Update image tag
         run: |
           cd gitops
-          sed -i "s/newTag: .*/newTag: ${{ '{{' }} env.TAG {{ '}}' }}/" apps/sample-webapp/overlays/dev/kustomization.yaml
-{% if not gitless %}
-          git config user.email "ci@{{ apps_domain }}"
+          sed -i "s/newTag: .*/newTag: ${{ "{{" }} env.TAG {{ "}}" }}/" apps/sample-webapp/overlays/dev/kustomization.yaml
+{{- if not .gitless }}
+          git config user.email "ci@{{ .apps_domain }}"
           git config user.name "loko-ci"
           git add apps/sample-webapp/overlays/dev/kustomization.yaml
-          git diff --cached --quiet || git commit -m "ci: update sample-webapp to ${{ '{{' }} env.TAG {{ '}}' }}"
+          git diff --cached --quiet || git commit -m "ci: update sample-webapp to ${{ "{{" }} env.TAG {{ "}}" }}"
           git push origin main
-{% endif %}
-{% if gitless %}
+{{- end }}
+{{- if .gitless }}
 
       - name: Publish dev OCI artifact
         run: |
@@ -51,19 +51,19 @@ jobs:
           mkdir -p bundle
           kustomize build apps/sample-webapp/overlays/dev > bundle/manifests.yaml
           tar -C bundle -czf webapp-dev.tgz .
-          oras push {{ sample_webapp_dev_oci_url | replace('oci://', '') }}:dev-latest \
+          oras push {{ replace "oci://" "" .sample_webapp_dev_oci_url }}:dev-latest \
             --artifact-type application/vnd.getloko.gitops.app.v1 \
             webapp-dev.tgz:application/vnd.oci.image.layer.v1.tar+gzip
 
-{% if provider == "argocd" %}
+{{- if eq .provider "argocd" }}
       - name: Trigger ArgoCD hard refresh (webapp-dev)
-        if: ${{ '{{' }} success() {{ '}}' }}
+        if: ${{ "{{" }} success() {{ "}}" }}
         run: |
           set -euo pipefail
-          ARGOCD_URL="http://argocd-server.{{ gitops_namespace }}.svc.cluster.local"
+          ARGOCD_URL="http://argocd-server.{{ .gitops_namespace }}.svc.cluster.local"
           TOKEN=$(curl -sf -X POST "${ARGOCD_URL}/api/v1/session" \
             -H "Content-Type: application/json" \
-            -d "{\"username\":\"admin\",\"password\":\"${{ '{{' }} secrets.LOKO_ARGOCD_TOKEN {{ '}}' }}\"}" \
+            -d "{\"username\":\"admin\",\"password\":\"${{ "{{" }} secrets.LOKO_ARGOCD_TOKEN {{ "}}" }}\"}" \
             | awk -F'"token":"' '{print $2}' | cut -d'"' -f1)
           if [ -z "${TOKEN}" ]; then
             echo "Failed to obtain ArgoCD session token" >&2
@@ -71,10 +71,10 @@ jobs:
           fi
           curl -sf "${ARGOCD_URL}/api/v1/applications/webapp-dev?refresh=hard" \
             -H "Authorization: Bearer ${TOKEN}" > /dev/null
-{% endif %}
-{% if provider == "fluxcd" %}
+{{- end }}
+{{- if eq .provider "fluxcd" }}
       - name: Notify Flux to reconcile dev
-        if: ${{ '{{' }} success() {{ '}}' }}
+        if: ${{ "{{" }} success() {{ "}}" }}
         run: |
           TOKEN="loko-webhook-v1"
           HOOK_PATH=$(echo -n "${TOKEN}" | sha256sum | awk '{print $1}')
@@ -84,6 +84,6 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-Signature: sha256=${SIG}" \
             -d "${PAYLOAD}" \
-            "http://webhook-receiver.{{ gitops_namespace }}.svc.cluster.local/hook/${HOOK_PATH}" || echo "Flux notification failed (non-fatal)"
-{% endif %}
-{% endif %}
+            "http://webhook-receiver.{{ .gitops_namespace }}.svc.cluster.local/hook/${HOOK_PATH}" || echo "Flux notification failed (non-fatal)"
+{{- end }}
+{{- end }}

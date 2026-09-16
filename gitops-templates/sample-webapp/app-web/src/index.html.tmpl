@@ -17,7 +17,7 @@
       <div class="meta-grid">
         <div class="meta-item">
           <span class="label">LoKO Environment</span>
-          <span class="value">{{ env_name }}</span>
+          <span class="value">{{ .env_name }}</span>
         </div>
         <div class="meta-item">
           <span class="label">Namespace</span>
@@ -25,7 +25,7 @@
         </div>
         <div class="meta-item">
           <span class="label">Provider</span>
-          <span class="value">{{ provider }}</span>
+          <span class="value">{{ .provider }}</span>
         </div>
         <div class="meta-item">
           <span class="label">Build</span>
@@ -52,16 +52,16 @@
       }
 
       function namespaceFromHost(hostname) {
-        var appSuffix = '.{{ apps_domain }}';
-        var previewSuffix = '.{{ preview_domain }}';
+        var appSuffix = '.{{ .apps_domain }}';
+        var previewSuffix = '.{{ .preview_domain }}';
 
         if (!hostname) {
           return 'unknown';
         }
-        if (hostname === 'webapp-dev.{{ apps_domain }}') {
+        if (hostname === 'webapp-dev.{{ .apps_domain }}') {
           return 'webapp-dev';
         }
-        if (hostname === 'webapp-prod.{{ apps_domain }}') {
+        if (hostname === 'webapp-prod.{{ .apps_domain }}') {
           return 'webapp-prod';
         }
         if (hostname.endsWith(previewSuffix)) {

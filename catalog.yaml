@@ -32,40 +32,41 @@ includes:
 template-includes:
   # gitops repo templates
   - gitops-manifests/repo-layout.yaml
-  - gitops-templates/gitops/README.md.j2
-  - gitops-templates/gitops/environments/kustomization.yaml.j2
-  - gitops-templates/gitops/workflows/hello.yaml.j2
+  - gitops-templates/gitops/README.md.tmpl
+  - gitops-templates/gitops/environments/kustomization.yaml.tmpl
+  - gitops-templates/gitops/workflows/hello.yaml.tmpl
+  - gitops-templates/gitops/workflows/publish-oci.yaml.tmpl
   - gitops-templates/gitops/flux/git-repo.yaml.tmpl
   - gitops-templates/gitops/flux/flux-kustomization.yaml.tmpl
   - gitops-templates/gitops/flux/receiver-gitops.yaml.tmpl
-  - gitops-templates/gitops/flux/receiver-pr-previews.yaml.j2
-  - gitops-templates/gitops/flux/echo.yaml.j2
-  - gitops-templates/gitops/flux/sample-webapp/dev.yaml.j2
-  - gitops-templates/gitops/flux/sample-webapp/prod.yaml.j2
-  - gitops-templates/gitops/flux/sample-webapp/pr-preview.yaml.j2
+  - gitops-templates/gitops/flux/receiver-pr-previews.yaml.tmpl
+  - gitops-templates/gitops/flux/echo.yaml.tmpl
+  - gitops-templates/gitops/flux/sample-webapp/dev.yaml.tmpl
+  - gitops-templates/gitops/flux/sample-webapp/prod.yaml.tmpl
+  - gitops-templates/gitops/flux/sample-webapp/pr-preview.yaml.tmpl
   - gitops-templates/gitops/argocd/application.yaml.tmpl
   - gitops-templates/gitops/argocd/repo-secret.yaml.tmpl
-  - gitops-templates/gitops/argocd/echo.yaml.j2
-  - gitops-templates/gitops/argocd/sample-webapp/dev.yaml.j2
-  - gitops-templates/gitops/argocd/sample-webapp/prod.yaml.j2
-  - gitops-templates/gitops/argocd/sample-webapp/pr-preview.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/base/kustomization.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/base/deployment.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/base/ingress.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/base/service.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/overlays/dev/kustomization.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/overlays/dev/namespace.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/overlays/prod/kustomization.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/overlays/prod/namespace.yaml.j2
-  - gitops-templates/gitops/apps/sample-webapp/overlays/preview/kustomization.yaml.j2
+  - gitops-templates/gitops/argocd/echo.yaml.tmpl
+  - gitops-templates/gitops/argocd/sample-webapp/dev.yaml.tmpl
+  - gitops-templates/gitops/argocd/sample-webapp/prod.yaml.tmpl
+  - gitops-templates/gitops/argocd/sample-webapp/pr-preview.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/base/kustomization.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/base/deployment.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/base/ingress.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/base/service.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/overlays/dev/kustomization.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/overlays/dev/namespace.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/overlays/prod/kustomization.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/overlays/prod/namespace.yaml.tmpl
+  - gitops-templates/gitops/apps/sample-webapp/overlays/preview/kustomization.yaml.tmpl
   # sample-webapp repo templates
-  - gitops-templates/sample-webapp/README.md.j2
-  - gitops-templates/sample-webapp/app-web/Dockerfile.j2
-  - gitops-templates/sample-webapp/app-web/src/index.html.j2
+  - gitops-templates/sample-webapp/README.md.tmpl
+  - gitops-templates/sample-webapp/app-web/Dockerfile.tmpl
+  - gitops-templates/sample-webapp/app-web/src/index.html.tmpl
   - gitops-templates/sample-webapp/app-web/src/style.css
-  - gitops-templates/sample-webapp/workflows/build.yaml.j2
-  - gitops-templates/sample-webapp/workflows/pr.yaml.j2
-  - gitops-templates/sample-webapp/workflows/promote.yaml.j2
+  - gitops-templates/sample-webapp/workflows/build.yaml.tmpl
+  - gitops-templates/sample-webapp/workflows/pr.yaml.tmpl
+  - gitops-templates/sample-webapp/workflows/promote.yaml.tmpl
 
 # ============================================================================
 # Shared Templates (YAML Anchors)

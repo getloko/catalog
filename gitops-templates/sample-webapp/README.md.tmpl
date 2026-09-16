@@ -4,8 +4,8 @@ This is the sample web app repository created by [LoKO](https://getloko.dev) to 
 
 It is a minimal static web page served by BusyBox `httpd`, wired end-to-end with:
 
-- A container registry at `{{ container_registry_url }}`
-- A GitOps repository managed by {{ provider }}
+- A container registry at `{{ .container_registry_url }}`
+- A GitOps repository managed by {{ .provider }}
 - Forgejo Actions CI running on `loko-runner`
 
 Once you are comfortable with the setup, replace this app with your own and keep the same GitOps structure.
@@ -28,11 +28,11 @@ Dockerfile              # Builds the BusyBox `httpd` image
 Triggers on push to `main` when `src/**` or `Dockerfile` changes.
 
 1. Builds the Docker image and tags it `main-<sha>`.
-2. Pushes the image to `{{ container_registry_url }}/{{ app_repo }}`.
+2. Pushes the image to `{{ .container_registry_url }}/{{ .app_repo }}`.
 3. Clones the GitOps repo and updates the `newTag` in `apps/sample-webapp/overlays/dev/kustomization.yaml`.
-4. Commits and pushes — {{ provider }} picks up the change and deploys to dev.
+4. Commits and pushes — {{ .provider }} picks up the change and deploys to dev.
 
-The app is available at: `https://webapp-dev.{{ apps_domain }}`
+The app is available at: `https://webapp-dev.{{ .apps_domain }}`
 
 ### PR Build (`pr.yaml`)
 
@@ -41,7 +41,7 @@ Triggers on pull requests to `main`.
 Builds a PR image tagged `pr-{N}-<sha>` to validate PR changes. The image is pushed only
 when a preview has been requested, and rebuild/push is skipped when that exact tag already
 exists in the registry.
-{% if provider == "fluxcd" %}
+{{- if eq .provider "fluxcd" }}
 **Flux — label-driven trigger:**
 Flux preview builds use two labels:
 
@@ -60,10 +60,10 @@ To trigger a preview:
 4. If the PR is already open, comment `/preview` to trigger the preview build immediately.
 5. CI sets `preview-built` after a successful push.
 6. Flux creates a namespace and deploys the preview.
-7. Preview is available at `https://webapp-pr-{N}.{{ preview_domain }}`.
+7. Preview is available at `https://webapp-pr-{N}.{{ .preview_domain }}`.
 8. Remove `preview-built`, or close/merge the PR, to tear down the preview.
 
-{% else %}
+{{- else }}
 **ArgoCD — title-based trigger:**
 The workflow builds on matching PR code changes only when the current `pr-{N}-<sha>` image
 does not already exist. It only pushes the image and marks the PR deployable when `preview`
@@ -78,9 +78,9 @@ To trigger a preview:
 4. If the PR is already open, comment `/preview` to trigger the preview build immediately.
 5. After a successful push, CI appends ` [preview-built]` to the PR title.
 6. ArgoCD creates an Application named `webapp-pr-{N}` within ~5 minutes.
-7. Preview is available at `https://webapp-pr-{N}.{{ preview_domain }}`.
+7. Preview is available at `https://webapp-pr-{N}.{{ .preview_domain }}`.
 8. Close or merge the PR to prune the preview Application.
-{% endif %}
+{{- end }}
 
 ### Promote (`promote.yaml`)
 
@@ -101,4 +101,4 @@ apps/sample-webapp/
     └── preview/        # PR preview overlay
 ```
 
-The GitOps repo is at: `{{ forgejo_base_url }}/{{ forgejo_org }}/gitops`
+The GitOps repo is at: `{{ .forgejo_base_url }}/{{ .forgejo_org }}/gitops`

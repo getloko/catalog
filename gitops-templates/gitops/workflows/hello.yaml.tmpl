@@ -11,9 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Hello from {{ env_name }}
+      - name: Hello from {{ .env_name }}
         run: |
-          echo "Hello from loko environment: {{ env_name }}"
-          echo "Apps domain: {{ apps_domain }}"
+          echo "Hello from loko environment: {{ .env_name }}"
+          echo "Apps domain: {{ .apps_domain }}"
           echo "Runner: $(hostname)"
           echo "Date: $(date)"

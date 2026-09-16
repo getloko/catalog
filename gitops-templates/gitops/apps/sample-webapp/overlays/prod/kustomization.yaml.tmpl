@@ -6,7 +6,7 @@ resources:
   - ../../base
 images:
   - name: webapp
-    newName: {{ container_registry_url }}/{{ app_repo }}
+    newName: {{ .container_registry_url }}/{{ .app_repo }}
     newTag: none
 patches:
   - patch: |-
@@ -27,10 +27,10 @@ patches:
         value: webapp-prod
       - op: replace
         path: /spec/rules/0/host
-        value: webapp-prod.{{ apps_domain }}
+        value: webapp-prod.{{ .apps_domain }}
       - op: replace
         path: /spec/tls/0/hosts/0
-        value: webapp-prod.{{ apps_domain }}
+        value: webapp-prod.{{ .apps_domain }}
       - op: replace
         path: /spec/rules/0/http/paths/0/backend/service/name
         value: webapp-prod

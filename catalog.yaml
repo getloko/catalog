@@ -35,16 +35,16 @@ template-includes:
   - gitops-templates/gitops/README.md.j2
   - gitops-templates/gitops/environments/kustomization.yaml.j2
   - gitops-templates/gitops/workflows/hello.yaml.j2
-  - gitops-templates/gitops/flux/git-repo.yaml.j2
-  - gitops-templates/gitops/flux/flux-kustomization.yaml.j2
-  - gitops-templates/gitops/flux/receiver-gitops.yaml.j2
+  - gitops-templates/gitops/flux/git-repo.yaml.tmpl
+  - gitops-templates/gitops/flux/flux-kustomization.yaml.tmpl
+  - gitops-templates/gitops/flux/receiver-gitops.yaml.tmpl
   - gitops-templates/gitops/flux/receiver-pr-previews.yaml.j2
   - gitops-templates/gitops/flux/echo.yaml.j2
   - gitops-templates/gitops/flux/sample-webapp/dev.yaml.j2
   - gitops-templates/gitops/flux/sample-webapp/prod.yaml.j2
   - gitops-templates/gitops/flux/sample-webapp/pr-preview.yaml.j2
-  - gitops-templates/gitops/argocd/application.yaml.j2
-  - gitops-templates/gitops/argocd/repo-secret.yaml.j2
+  - gitops-templates/gitops/argocd/application.yaml.tmpl
+  - gitops-templates/gitops/argocd/repo-secret.yaml.tmpl
   - gitops-templates/gitops/argocd/echo.yaml.j2
   - gitops-templates/gitops/argocd/sample-webapp/dev.yaml.j2
   - gitops-templates/gitops/argocd/sample-webapp/prod.yaml.j2

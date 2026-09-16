@@ -163,4 +163,4 @@ workloads:
     presets:
       instance:
         distribution:
-          version: "2.x"
+          version: "2.6.x"

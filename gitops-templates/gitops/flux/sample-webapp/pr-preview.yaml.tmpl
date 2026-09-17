@@ -10,7 +10,7 @@ metadata:
     fluxcd.controlplane.io/reconcileEvery: "5m"
 spec:
   type: GiteaPullRequest
-  url: {{ .forgejo_base_url }}/{{ .app_repo }}
+  url: {{ .forgejo_base_url }}/{{ .forgejo_org }}/{{ .app_repo }}
   secretRef:
     name: forgejo-gitops-auth
   certSecretRef:

@@ -53,7 +53,5 @@ helm-repositories:
     url: https://helm.penpot.app
 
   # Example workload repos
-  - name: securecodebox
-    url: https://charts.securecodebox.io/
   - name: istio
     url: https://istio-release.storage.googleapis.com/charts

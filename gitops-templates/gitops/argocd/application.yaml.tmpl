@@ -3,6 +3,8 @@ kind: Application
 metadata:
   name: loko-root
   namespace: {{ .gitops_namespace }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:

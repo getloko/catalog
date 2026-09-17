@@ -10,7 +10,7 @@ spec:
     - pullRequest:
         gitea:
           owner: {{ .forgejo_org }}
-          repo: {{ .app_name }}
+          repo: {{ .app_repo }}
           api: {{ .forgejo_base_url }}
           tokenRef:
             secretName: forgejo-repo-secret
@@ -22,6 +22,8 @@ spec:
   template:
     metadata:
       name: "webapp-pr-{{ "{{" }}.number{{ "}}" }}"
+      finalizers:
+        - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
       source:

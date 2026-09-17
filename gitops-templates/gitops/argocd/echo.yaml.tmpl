@@ -42,8 +42,19 @@ spec:
                       identifier: main
                       port: http
             tls:
-              - hosts:
-                  - echo.{{ .apps_domain }}
+          - hosts:
+              - echo.{{ .apps_domain }}
+        networkpolicies:
+          main:
+            enabled: true
+            policyTypes:
+              - Ingress
+            rules:
+              ingress:
+                - from:
+                    - namespaceSelector: {}
+                  ports:
+                    - port: 80
   destination:
     server: https://kubernetes.default.svc
     namespace: {{ .gitops_namespace }}

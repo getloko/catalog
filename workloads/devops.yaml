@@ -116,6 +116,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []
+    requires:
+      - workload: forgejo
+        required: true
+        reason: "Forgejo API is required to create the runner registration token"
     presets:
       # Required by upstream chart guard for this frozen release line.
       knownLastVersion: true

@@ -47,6 +47,17 @@ spec:
         tls:
           - hosts:
               - echo.{{ .apps_domain }}
+    networkpolicies:
+      main:
+        enabled: true
+        policyTypes:
+          - Ingress
+        rules:
+          ingress:
+            - from:
+                - namespaceSelector: {}
+              ports:
+                - port: 80
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository

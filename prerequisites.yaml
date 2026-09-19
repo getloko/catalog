@@ -75,7 +75,7 @@ tools:
   aws:
     description: "AWS CLI (for S3 storage)"
     required: false
-    # renovate: datasource=github-releases depName=aws/aws-cli
+    # renovate: datasource=custom.aws-cli depName=aws/aws-cli
     version: "2.36.49"
     mise-name: "awscli"
     install-url: "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"

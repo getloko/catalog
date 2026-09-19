@@ -145,7 +145,7 @@ workloads:
       repo: groundhog2k
       name: groundhog2k/mongodb
       # renovate: datasource=helm depName=mongodb repositoryUrl=https://groundhog2k.github.io/helm-charts
-      version: "0.8.2"
+      version: "0.8.3"
     defaults:
       namespace: loko-system
       ports: [27017]
@@ -266,7 +266,7 @@ workloads:
               image:
                 repository: dpage/pgadmin4
                 # renovate: datasource=docker depName=dpage/pgadmin4
-                tag: "9.15.0"
+                tag: "2026-09-15-1"
               env:
                 PGADMIN_DEFAULT_EMAIL: admin@local.dev
                 PGADMIN_DEFAULT_PASSWORD: admin  # pragma: allowlist secret

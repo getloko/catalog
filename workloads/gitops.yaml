@@ -8,7 +8,7 @@ workloads:
       repo: argo
       name: argo/argo-cd
       # renovate: datasource=helm depName=argo-cd repositoryUrl=https://argoproj.github.io/argo-helm
-      version: "9.7.1"
+      version: "10.9.2"
     defaults:
       namespace: loko-system
       ports: []
@@ -101,7 +101,7 @@ workloads:
       repo: flux-operator
       name: flux-operator/flux-operator
       # renovate: datasource=docker depName=ghcr.io/controlplaneio-fluxcd/charts/flux-operator
-      version: "0.45.1"
+      version: "0.60.0"
     defaults:
       namespace: flux-system
       storage:
@@ -157,7 +157,7 @@ workloads:
       repo: flux-operator
       name: flux-operator/flux-instance
       # renovate: datasource=docker depName=ghcr.io/controlplaneio-fluxcd/charts/flux-instance
-      version: "0.45.1"  # linked to flux-operator version
+      version: "0.60.0"  # linked to flux-operator version
     defaults:
       namespace: flux-system
     presets:

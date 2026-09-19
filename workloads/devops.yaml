@@ -7,7 +7,7 @@ workloads:
       repo: forgejo-helm
       name: forgejo-helm/forgejo
       # renovate: datasource=docker depName=code.forgejo.org/forgejo-helm/forgejo
-      version: "16.2.2"
+      version: "17.1.7"
     defaults:
       namespace: loko-system
       ports: []  # Traffic goes through Traefik ingress on 443

@@ -8,7 +8,7 @@ workloads:
       repo: groundhog2k
       name: groundhog2k/rabbitmq
       # renovate: datasource=helm depName=rabbitmq repositoryUrl=https://groundhog2k.github.io/helm-charts
-      version: "2.3.8"
+      version: "2.3.9"
     defaults:
       namespace: loko-system
       ports: [5672]
@@ -510,7 +510,7 @@ workloads:
       repo: stalwart
       name: stalwart/stalwart-mail
       # renovate: datasource=docker depName=codeberg.org/wrenix/helm-charts/stalwart-mail
-      version: "1.0.7"
+      version: "2.0.10"
     defaults:
       namespace: loko-system
       # Client-facing implicit TLS listeners only (submission + IMAP).

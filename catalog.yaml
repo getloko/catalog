@@ -26,6 +26,7 @@ includes:
   - workloads/devtools.yaml
   - workloads/gitops.yaml
   - workloads/collaboration.yaml
+  - workloads/observability.yaml
   - examples.yaml
 
 # GitOps template files (fetched verbatim, not parsed as YAML catalog data)
@@ -112,7 +113,7 @@ _templates:
     repo: bjw-s
     name: bjw-s/app-template
     # renovate: datasource=helm depName=app-template repositoryUrl=https://bjw-s-labs.github.io/helm-charts
-    version: "5.0.0"
+    version: "5.2.1"
 
   # Chart base for groundhog2k
   chart-base-groundhog2k: &chart-base-groundhog2k

@@ -98,7 +98,7 @@ workloads:
               image:
                 repository: ministackorg/ministack
                 # renovate: datasource=docker depName=ministackorg/ministack
-                tag: "1.5.11"
+                tag: "1.5.13"
               env:
                 AWS_ENDPOINT_URL: "http://localhost:4566"
                 AWS_DEFAULT_REGION: "us-east-1"

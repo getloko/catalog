@@ -31,7 +31,7 @@ tools:
     description: "Helm package manager"
     required: true
     # renovate: datasource=github-releases depName=helm/helm
-    version: "3.22.0"
+    version: "4.3.0"
     mise-name: "helm"
     install-url: "https://helm.sh/docs/intro/install/"
     check-args: ["version", "--short"]
@@ -40,7 +40,7 @@ tools:
     description: "Helmfile declarative spec"
     required: true
     # renovate: datasource=github-releases depName=helmfile/helmfile
-    version: "0.171.0"
+    version: "1.8.0"
     mise-name: "helmfile"
     install-url: "https://github.com/helmfile/helmfile#installation"
     check-args: ["--version"]
@@ -76,7 +76,7 @@ tools:
     description: "AWS CLI (for S3 storage)"
     required: false
     # renovate: datasource=github-releases depName=aws/aws-cli
-    version: "2.24.18"
+    version: "2.36.49"
     mise-name: "awscli"
     install-url: "https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html"
     check-args: ["--version"]
@@ -85,7 +85,7 @@ tools:
     description: "Mise (tool version manager)"
     required: false
     # renovate: datasource=github-releases depName=jdx/mise
-    version: "2026.9.6"
+    version: "2026.9.11"
     install-url: "https://mise.jdx.dev/getting-started.html"
     check-args: ["--version"]
 

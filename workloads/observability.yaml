@@ -1,0 +1,130 @@
+# Observability & Monitoring Workloads
+workloads:
+  kube-prometheus-stack:
+    category: observability
+    description: Complete Kubernetes monitoring stack (Prometheus, Grafana, Alertmanager)
+    chart:
+      repo: prometheus-community
+      name: prometheus-community/kube-prometheus-stack
+      # renovate: datasource=helm depName=kube-prometheus-stack repositoryUrl=https://prometheus-community.github.io/helm-charts
+      version: "91.4.1"
+    defaults:
+      namespace: loko-system
+      ports: []
+      storage:
+        size: 10Gi
+    mappings:
+      storage: prometheus.prometheusSpec.storageSpec.volumeClaimTemplate.spec.resources.requests.storage
+      secrets.admin.username: grafana.adminUser
+      secrets.admin.password: grafana.adminPassword  # pragma: allowlist secret
+    secrets:
+      admin:
+        name: admin
+        type: user-pass
+        description: Grafana admin user credentials
+        fields:
+          - name: username
+            type: static
+            value: admin
+            sensitive: false
+          - name: password
+            type: password
+            length: 16
+        mappings:
+          username: grafana.adminUser
+          password: grafana.adminPassword  # pragma: allowlist secret
+    presets:
+      # KinD compatibility: disable scraping for control-plane components that bind to localhost
+      kubeControllerManager:
+        enabled: false
+      kubeScheduler:
+        enabled: false
+      kubeEtcd:
+        enabled: false
+      kubeProxy:
+        enabled: false
+
+      # Prometheus configuration
+      prometheus:
+        ingress:
+          <<: *ingress-traefik
+          enabled: true
+          ingressClassName: traefik
+          hosts:
+            - prometheus.${LOKO_DOMAIN}
+          paths:
+            - /
+          tls:
+            - hosts:
+                - prometheus.${LOKO_DOMAIN}
+              secretName: wildcard-tls  # pragma: allowlist secret
+        prometheusSpec:
+          retention: 2d
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 10Gi
+
+      # Grafana configuration
+      grafana:
+        ingress:
+          <<: *ingress-traefik
+          enabled: true
+          ingressClassName: traefik
+          hosts:
+            - grafana.${LOKO_DOMAIN}
+          path: /
+          tls:
+            - hosts:
+                - grafana.${LOKO_DOMAIN}
+              secretName: wildcard-tls  # pragma: allowlist secret
+
+      # Alertmanager configuration
+      alertmanager:
+        ingress:
+          <<: *ingress-traefik
+          enabled: true
+          ingressClassName: traefik
+          hosts:
+            - alertmanager.${LOKO_DOMAIN}
+          paths:
+            - /
+          tls:
+            - hosts:
+                - alertmanager.${LOKO_DOMAIN}
+              secretName: wildcard-tls  # pragma: allowlist secret
+    endpoints:
+      - name: grafana
+        protocol: http
+        port: 80
+        description: Grafana dashboards
+      - name: prometheus
+        protocol: http
+        port: 9090
+        description: Prometheus query interface and API
+      - name: alertmanager
+        protocol: http
+        port: 9093
+        description: Alertmanager alerts dashboard
+    connection-strings:
+      - name: grafana-ui
+        template: "https://${HOST}"
+      - name: prometheus-ui
+        template: "https://${HOST}"
+      - name: alertmanager-ui
+        template: "https://${HOST}"
+    health-checks:
+      - name: prometheus-ready
+        type: http
+        tier: infrastructure
+        target: prometheus
+        path: /-/ready
+        description: Check if Prometheus is ready
+      - name: grafana-health
+        type: http
+        tier: infrastructure
+        target: grafana
+        path: /api/health
+        description: Check if Grafana is healthy

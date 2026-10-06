@@ -136,8 +136,12 @@ workloads:
               data:
                 config.json: '{"servers":[{"name":"NATS","url":"https://{{ parent.name }}.${LOKO_DOMAIN}"}]}'
     presets:
-      # Enable monitoring HTTP endpoint
+      # Enable JetStream (chart default is off) with file storage on a PVC
+      # (fileStore.pvc is enabled by chart default; size comes from mappings.storage)
+      # and the monitoring HTTP endpoint
       config:
+        jetstream:
+          enabled: true
         monitor:
           enabled: true
           port: 8223

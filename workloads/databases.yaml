@@ -202,7 +202,7 @@ workloads:
         lifecycle-binding: true
         config-template:
           mongodbServer: "{{ parent.service_dns }}"
-          mongodbAuthPassword: "{{ parent.secrets.password }}"
+          mongodbAdminPassword: "{{ parent.secrets.password }}"
   mysql-ui:
     category: ui
     description: Web UI for MySQL/MariaDB management (phpMyAdmin)
@@ -341,12 +341,32 @@ workloads:
       - workload: mongodb
         required: true
         reason: "mongo-express connects to the mongodb Service with its root credentials"
+    mappings:
+      secrets.admin.username: basicAuthUsername
+      secrets.admin.password: basicAuthPassword  # pragma: allowlist secret
+    secrets:
+      admin:
+        name: admin
+        type: user-pass
+        description: mongo-express web login (HTTP basic auth)
+        fields:
+          - name: username
+            type: static
+            value: admin
+            sensitive: false
+          - name: password
+            type: password
+            length: 16
+        mappings:
+          username: basicAuthUsername
+          password: basicAuthPassword  # pragma: allowlist secret
     presets:
       mongodbServer: "mongodb.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local"
-      mongodbEnableAdmin: false
-      mongodbAuthUsername: root
-      mongodbAuthDatabase: admin
-      # mongodbAuthPassword is injected at deploy time via the link config-template
+      # Admin mode: connect as the mongodb root user (authSource admin) so
+      # every database is listed, not only the auth database.
+      mongodbEnableAdmin: true
+      mongodbAdminUsername: root
+      # mongodbAdminPassword is injected at deploy time via the link config-template
       # using {{ parent.secrets.password }} from the mongodb workload secrets
       ingress:
         enabled: true

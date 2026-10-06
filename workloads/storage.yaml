@@ -105,7 +105,9 @@ workloads:
         replicationFactor: "1"  # String format required by chart
         s3:
           api:
-            region: "garage"
+            # Must match the region of loko's shared loko-<env> AWS profile
+            # (us-east-1): Garage rejects SigV4 requests scoped to another region.
+            region: "us-east-1"
             rootDomain: ""  # Empty = path-style only for S3 API; use https://garage.domain/bucket
           web:
             rootDomain: ".garage.${LOKO_DOMAIN}"  # Bucket websites at {bucket}.garage.domain

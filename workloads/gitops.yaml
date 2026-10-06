@@ -76,18 +76,21 @@ workloads:
           failureThreshold: 3
     endpoints:
       - name: web-ui
+        service: argocd-server
         protocol: http
         port: 80
         description: ArgoCD web UI and API
       - name: grpc
+        service: argocd-server
         protocol: tcp
         port: 443
         description: ArgoCD gRPC server
     connection-strings:
       - name: web-ui
-        template: "https://${HOST}"
+        template: "${URL}"
       - name: grpc
-        template: "${HOST}:443"
+        endpoint: grpc
+        template: "${HOST}:${PORT}"
     health-checks:
       - name: port
         <<: *health-check-port
@@ -138,12 +141,13 @@ workloads:
               secretName: wildcard-tls  # pragma: allowlist secret
     endpoints:
       - name: web-ui
+        host: flux
         protocol: http
         port: 9080
         description: Flux web UI (Mission control dashboard)
     connection-strings:
       - name: web-ui
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: port
         <<: *health-check-port

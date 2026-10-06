@@ -82,14 +82,15 @@ workloads:
         rootless: true
     endpoints:
       - name: http
+        service: forgejo-http
         protocol: http
         port: 3000
         description: Forgejo web UI and Git HTTPS (SSH disabled)
     connection-strings:
       - name: web-ui
-        template: "https://${HOST}"
+        template: "${URL}"
       - name: git-https
-        template: "https://${HOST}/repo.git"
+        template: "${URL}/repo.git"
     health-checks:
       - name: api
         type: http
@@ -353,26 +354,35 @@ workloads:
           enabled: false
     endpoints:
       - name: ui
+        service: terrakube-ui-service
+        host: terrakube-ui
         protocol: https
-        port: 443
+        port: 8080
         description: Terrakube web UI (workspaces, runs, teams)
       - name: api
+        service: terrakube-api-service
+        host: terrakube-api
         protocol: https
-        port: 443
+        port: 8080
         description: Terrakube REST API
       - name: registry
+        service: terrakube-registry-service
+        host: terrakube-reg
         protocol: https
-        port: 443
+        port: 8075
         description: Terraform module and provider registry
     connection-strings:
       - name: ui
-        template: "https://terrakube-ui.${LOKO_DOMAIN}"
+        template: "${URL}"
       - name: api
-        template: "https://terrakube-api.${LOKO_DOMAIN}"
+        endpoint: api
+        template: "${URL}"
       - name: registry
-        template: "https://terrakube-reg.${LOKO_DOMAIN}"
+        endpoint: registry
+        template: "${URL}"
       - name: terraform-backend
-        template: "https://terrakube-api.${LOKO_DOMAIN}/tfstate/v1/organization/{org}/workspace/{workspace}"
+        endpoint: api
+        template: "${URL}/tfstate/v1/organization/{org}/workspace/{workspace}"
     health-checks:
       - name: api
         type: http

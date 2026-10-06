@@ -214,8 +214,10 @@ workloads:
         port: 9644
         description: Admin API and metrics
       - name: console
+        service: redpanda-console
+        host: redpanda-ui
         protocol: https
-        port: 443
+        port: 8080
         description: Redpanda Console web UI
     connection-strings:
       - name: kafka
@@ -389,6 +391,7 @@ workloads:
                 - elasticmq-api.${LOKO_DOMAIN}
     endpoints:
       - name: api
+        host: elasticmq-api
         protocol: http
         port: 9324
         description: SQS-compatible REST API
@@ -398,9 +401,10 @@ workloads:
         description: Built-in web UI for queue monitoring
     connection-strings:
       - name: sqs-endpoint
-        template: "http://${HOST}:9324"
+        template: "${URL}"
       - name: web-ui
-        template: "https://${HOST}"
+        endpoint: ui
+        template: "${URL}"
     health-checks:
       - name: port
         <<: *health-check-port
@@ -503,12 +507,13 @@ workloads:
                 - sns.${LOKO_DOMAIN}
     endpoints:
       - name: sns
+        host: sns
         protocol: https
         port: 4100
         description: SNS-compatible API endpoint
     connection-strings:
       - name: sns-endpoint
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: port
         <<: *health-check-port
@@ -590,26 +595,32 @@ workloads:
           password: secrets.env.SENDER_MAILBOX_SECRET  # pragma: allowlist secret
     endpoints:
       - name: smtps
+        host: mail
         protocol: tcp
         port: 465
         description: SMTPS — implicit TLS on standard port 465
       - name: imaps
+        host: mail
         protocol: tcp
         port: 993
         description: IMAPS — implicit TLS on standard port 993
       - name: admin
+        host: mail
         protocol: https
         port: 80
         description: Web admin UI (via HTTPS ingress)
       - name: webmail
+        service: stalwart-twake
+        host: webmail
         protocol: https
         port: 80
-        description: Root-FR webmail UI (via HTTPS ingress)
+        description: Twake webmail UI (via HTTPS ingress)
     connection-strings:
       - name: smtps
-        template: "smtps://${HOST}:465"
+        template: "smtps://${HOST}:${PORT}"
       - name: imaps
-        template: "imaps://${HOST}:993"
+        endpoint: imaps
+        template: "imaps://${HOST}:${PORT}"
     health-checks:
       - name: port
         <<: *health-check-port

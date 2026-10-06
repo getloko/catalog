@@ -35,12 +35,13 @@ workloads:
           port: 3002
     endpoints:
       - name: web-ui
+        service: excalidraw-main
         protocol: https
-        port: 443
+        port: 80
         description: Excalidraw web interface
     connection-strings:
       - name: web-ui
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: http
         type: http
@@ -111,11 +112,11 @@ workloads:
     endpoints:
       - name: web-ui
         protocol: https
-        port: 443
+        port: 8080
         description: Penpot web interface
     connection-strings:
       - name: web-ui
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: ui
         type: http

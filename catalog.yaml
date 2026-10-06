@@ -11,6 +11,23 @@
 #   ${LOKO_REGISTRY_HOST}             - Registry host
 #   ${LOKO_SYSTEM_WORKLOADS_NAMESPACE} - System workloads namespace
 #   ${LOKO_KUBECTL_CONTEXT}           - Kubernetes context name
+#
+# Workload endpoints (endpoints[]):
+#   name, protocol (tcp|http|https|ws|wss), port, description
+#   port      - the Kubernetes Service port
+#   service   - optional Kubernetes Service name (default: workload name)
+#   host      - optional external hostname label, e.g. "mail" -> mail.<domain>
+#               (default: workload name)
+#   http/https/ws/wss endpoints print internal http(ws)://<service>.<ns>.svc.cluster.local[:port]
+#   and external https(wss)://<host>.<domain> via the TLS ingress; tcp endpoints print
+#   <service>.<ns>.svc.cluster.local:<port> and <host>.<domain>:<port>.
+#
+# Connection strings (connection-strings[]):
+#   name, template, optional endpoint (endpoint name; default: first endpoint)
+#   Placeholders resolved per side (internal/external) from that endpoint:
+#   ${HOST} ${PORT} ${SCHEME} ${URL} (= scheme://host[:port]; tcp = host:port),
+#   plus ${USER} ${PASS} ${DB} ${VHOST} ${ACCESS_KEY} ${SECRET_KEY} and
+#   ${AWS_PROFILE} (= loko-<env>).
 version: "1"
 
 # File includes (processed by catalog loader)

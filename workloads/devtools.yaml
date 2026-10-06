@@ -67,7 +67,7 @@ workloads:
         description: HTTP testing UI and API
     connection-strings:
       - name: web
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: http
         type: http
@@ -194,14 +194,15 @@ workloads:
                     DYNAMO_ENDPOINT: "http://{{ parent.service_dns }}:4566"
     endpoints:
       - name: aws
+        host: aws
         protocol: https
         port: 4566
         description: AWS-compatible single endpoint for MiniStack services
     connection-strings:
       - name: endpoint
-        template: "https://${HOST}"
+        template: "${URL}"
       - name: aws-cli
-        template: "aws sts get-caller-identity --endpoint-url https://${HOST} --region us-east-1 --profile ${AWS_PROFILE}"
+        template: "aws sts get-caller-identity --endpoint-url ${URL} --region us-east-1 --profile ${AWS_PROFILE}"
     health-checks:
       - name: http
         type: http
@@ -278,7 +279,7 @@ workloads:
         description: DynamoDB Admin web UI (MiniStack variant)
     connection-strings:
       - name: web
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: http
         type: http
@@ -359,7 +360,7 @@ workloads:
         description: StackPort AWS resource browser UI
     connection-strings:
       - name: web
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: http
         type: http
@@ -462,11 +463,12 @@ workloads:
         description: SMTP server for email testing (captures all emails, never sends)
     connection-strings:
       - name: web-ui
-        template: "https://${HOST}"
+        template: "${URL}"
       - name: sms-api
-        template: "https://${HOST}/sendsms?mobiles={phone}&sender={app}&message={text}"
+        template: "${URL}/sendsms?mobiles={phone}&sender={app}&message={text}"
       - name: smtp
-        template: "smtp://${HOST}:8025"
+        endpoint: smtp
+        template: "smtp://${HOST}:${PORT}"
     health-checks:
       - name: web-ui
         type: http
@@ -525,7 +527,7 @@ workloads:
         description: IT Tools web interface
     connection-strings:
       - name: web
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: http
         type: http

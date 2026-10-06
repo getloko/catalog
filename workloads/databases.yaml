@@ -465,9 +465,9 @@ workloads:
         description: DynamoDB-compatible API endpoint
     connection-strings:
       - name: endpoint
-        template: "http://${HOST}:8000"
+        template: "${URL}"
       - name: aws-cli
-        template: "aws dynamodb list-tables --endpoint-url http://${HOST}:8000 --region us-east-1"
+        template: "aws dynamodb list-tables --endpoint-url ${URL} --region us-east-1"
     health-checks:
       - name: port
         <<: *health-check-port
@@ -558,7 +558,7 @@ workloads:
         description: DynamoDB Admin web UI
     connection-strings:
       - name: web
-        template: "https://${HOST}"
+        template: "${URL}"
     health-checks:
       - name: http
         type: http

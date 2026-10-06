@@ -97,24 +97,32 @@ workloads:
               secretName: wildcard-tls  # pragma: allowlist secret
     endpoints:
       - name: grafana
+        service: kube-prometheus-stack-grafana
+        host: grafana
         protocol: http
         port: 80
         description: Grafana dashboards
       - name: prometheus
+        service: kube-prometheus-stack-prometheus
+        host: prometheus
         protocol: http
         port: 9090
         description: Prometheus query interface and API
       - name: alertmanager
+        service: kube-prometheus-stack-alertmanager
+        host: alertmanager
         protocol: http
         port: 9093
         description: Alertmanager alerts dashboard
     connection-strings:
       - name: grafana-ui
-        template: "https://${HOST}"
+        template: "${URL}"
       - name: prometheus-ui
-        template: "https://${HOST}"
+        endpoint: prometheus
+        template: "${URL}"
       - name: alertmanager-ui
-        template: "https://${HOST}"
+        endpoint: alertmanager
+        template: "${URL}"
     health-checks:
       - name: prometheus-ready
         type: http

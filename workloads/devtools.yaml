@@ -373,7 +373,7 @@ workloads:
 
   mock-smtp-sms:
     category: devtools
-    description: SMTP & SMS testing tool - captures emails (SMTP) and SMS with web UI (MOSIP mock service)
+    description: 'SMTP & SMS testing tool - captures emails (SMTP) and SMS with web UI (MOSIP mock service). The UI is live-only (WebSocket, no history; a reload clears it) and shows "Invalid Date" for mails sent without a Date header'
     chart:
       <<: *chart-bjw-s
     defaults:

@@ -218,6 +218,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []
+    requires:
+      - workload: ministack
+        required: true
+        reason: "dynamodb-admin's DYNAMO_ENDPOINT is the ministack Service"
     presets:
       controllers:
         main:
@@ -291,6 +295,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []
+    requires:
+      - workload: ministack
+        required: true
+        reason: "stackport's AWS_ENDPOINT_URL is the ministack Service"
     presets:
       controllers:
         main:

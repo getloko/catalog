@@ -211,6 +211,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []  # Uses HTTP ingress, no TCP tunnel needed
+    requires:
+      - workload: mysql
+        required: true
+        reason: "phpMyAdmin connects to the mysql Service and reads its root password Secret"
     presets:
       controllers:
         main:
@@ -254,6 +258,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []  # Uses HTTP ingress, no TCP tunnel needed
+    requires:
+      - workload: postgres
+        required: true
+        reason: "pgAdmin's pre-configured server points at the postgres Service"
     presets:
       # Pod-level security context for volume permissions
       defaultPodOptions:
@@ -329,10 +337,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []  # Uses HTTP ingress, no TCP tunnel needed
-    dependencies:
+    requires:
       - workload: mongodb
-        optional: false
-        reason: "Requires MongoDB credentials for database connection"
+        required: true
+        reason: "mongo-express connects to the mongodb Service with its root credentials"
     presets:
       mongodbServer: "mongodb.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local"
       mongodbEnableAdmin: false
@@ -472,6 +480,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []
+    requires:
+      - workload: dynamodb-local
+        required: true
+        reason: "dynamodb-admin's DYNAMO_ENDPOINT is the dynamodb-local Service"
     presets:
       controllers:
         main:

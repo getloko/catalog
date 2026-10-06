@@ -774,6 +774,10 @@ workloads:
     defaults:
       namespace: loko-system
       ports: []  # Uses HTTP ingress, no TCP tunnel needed
+    requires:
+      - workload: nats
+        required: true
+        reason: "nats-dashboard reads the nats monitoring endpoint"
     presets:
       controllers:
         main:

@@ -197,10 +197,6 @@ workloads:
         protocol: tcp
         port: 9092
         description: Kafka-compatible client connections
-      - name: kafka-internal
-        protocol: tcp
-        port: 9093
-        description: Internal Kafka connections
       - name: schema-registry
         protocol: https
         port: 8081
@@ -272,6 +268,10 @@ workloads:
             - hosts:
                 - redpanda-ui.${LOKO_DOMAIN}
       listeners:
+        # Kafka listens on the port loko routes (tunnel -> Traefik TCP route ->
+        # Service redpanda:9092); the chart default is 9093.
+        kafka:
+          port: 9092
         schemaRegistry:
           enabled: true
         http:

@@ -21,6 +21,8 @@ workloads:
                 tag: "2.25.0"
               env:
                 PORT: "8088"
+                # go-httpbin rejects bodies over 1 MiB by default; allow 10 MiB.
+                MAX_BODY_SIZE: "10485760"
               probes:
                 liveness:
                   enabled: true

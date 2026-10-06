@@ -190,10 +190,7 @@ workloads:
     defaults:
       namespace: loko-system
       ports: [9092]
-      storage:
-        size: 5Gi
-    mappings:
-      storage: storage.persistentVolume.size
+    # No storage mapping: the data dir is an emptyDir (see presets.storage).
     secrets: {}  # No authentication by default (optional SASL)
     endpoints:
       - name: kafka
@@ -239,6 +236,16 @@ workloads:
         replicas: 1
       tls:
         enabled: false
+      # Keep the data dir off loko's PersistentVolumes. loko's local-path PVs
+      # live on a host directory bind-mounted into the KinD node; on macOS
+      # (OrbStack/Docker Desktop) that share reports a 1 MiB DMA alignment and
+      # Redpanda asserts on the first segment write (segment_appender.cc:70
+      # "unexpected alignment 4096 % 1048576"), even in dev-container mode.
+      # An emptyDir lives on the node's own filesystem and survives pod and
+      # node-container restarts, but not pod deletion or rescheduling.
+      storage:
+        persistentVolume:
+          enabled: false
       # Disable enterprise features to avoid 30-day trial
       config:
         cluster:

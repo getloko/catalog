@@ -26,6 +26,16 @@
         "ngrok"
       ],
       "versioning": "semver-coerced"
+    },
+    {
+      "description": "stalwart-mail 2.x ships Stalwart 0.16 (DataStore-only config.json, settings in the database); the catalog presets target the 1.x/config.toml model, so majors need a manual migration.",
+      "matchPackageNames": [
+        "codeberg.org/wrenix/helm-charts/stalwart-mail"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
     }
   ],
   "schedule": [

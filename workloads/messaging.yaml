@@ -520,8 +520,13 @@ workloads:
     chart:
       repo: stalwart
       name: stalwart/stalwart-mail
+      # Pinned to the 1.x line (Stalwart 0.15, TOML config.toml). Chart 2.x ships
+      # Stalwart 0.16, which replaces config.toml with a DataStore-only
+      # config.json and moves every other setting (listeners, hostname, TLS,
+      # accounts) into the database; the presets below do not apply to it.
+      # Majors are blocked in .github/renovate.json.
       # renovate: datasource=docker depName=codeberg.org/wrenix/helm-charts/stalwart-mail
-      version: "2.0.10"
+      version: "1.0.7"
     defaults:
       namespace: loko-system
       # Client-facing implicit TLS listeners only (submission + IMAP).

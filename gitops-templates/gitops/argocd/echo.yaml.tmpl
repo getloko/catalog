@@ -42,8 +42,8 @@ spec:
                       identifier: main
                       port: http
             tls:
-          - hosts:
-              - echo.{{ .apps_domain }}
+              - hosts:
+                  - echo.{{ .apps_domain }}
         networkpolicies:
           main:
             enabled: true

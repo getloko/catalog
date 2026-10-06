@@ -30,7 +30,8 @@ catalog/
     ├── devops.yaml        # Forgejo, Forgejo Runner
     ├── devtools.yaml      # Mock SMTP/SMS
     ├── gitops.yaml        # ArgoCD, Flux Operator
-    └── collaboration.yaml # Excalidraw
+    ├── collaboration.yaml # Excalidraw
+    └── observability.yaml # Kube-Prometheus-Stack (Prometheus, Grafana, Alertmanager)
 ```
 
 ## Using the Catalog
@@ -82,7 +83,7 @@ curl -O https://raw.githubusercontent.com/getloko/catalog/main/catalog.yaml
 curl -O https://raw.githubusercontent.com/getloko/catalog/main/workloads/databases.yaml
 
 # All workloads
-for file in databases cache messaging storage devops devtools gitops collaboration; do
+for file in databases cache messaging storage devops devtools gitops collaboration observability; do
   curl -O https://raw.githubusercontent.com/getloko/catalog/main/workloads/${file}.yaml
 done
 ```

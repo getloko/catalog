@@ -737,7 +737,7 @@ workloads:
       certificate:
         certmanager:
           enabled: false
-        secretName: wildcard-tls
+        secretName: wildcard-tls  # pragma: allowlist secret
       ingress:
         enabled: true
         className: traefik

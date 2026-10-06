@@ -217,7 +217,8 @@ workloads:
       api:
         defaultDatabase: false
         defaultRedis: false
-        existingSecret: true  # managed by terrakube post-sync plugin
+        # Managed by the Terrakube post-sync plugin.
+        existingSecret: true  # pragma: allowlist secret
         loadSampleData: false
         properties:
           databaseType: "POSTGRESQL"
@@ -239,12 +240,13 @@ workloads:
         volumes:
           - name: loko-ca
             secret:
-              secretName: loko-ca
+              secretName: loko-ca  # pragma: allowlist secret
               items:
                 - key: loko-ca.pem
                   path: loko-ca.pem
       executor:
-        existingSecret: true  # managed by terrakube post-sync plugin
+        # Managed by the Terrakube post-sync plugin.
+        existingSecret: true  # pragma: allowlist secret
       storage:
         defaultStorage: false
         minio:

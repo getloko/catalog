@@ -105,7 +105,7 @@ workloads:
                 AWS_ENDPOINT_URL: "http://localhost:4566"
                 AWS_DEFAULT_REGION: "us-east-1"
                 AWS_ACCESS_KEY_ID: "test"
-                AWS_SECRET_ACCESS_KEY: "test"
+                AWS_SECRET_ACCESS_KEY: "test"  # pragma: allowlist secret
                 PERSIST_STATE: "1"
               probes:
                 liveness:
@@ -181,7 +181,7 @@ workloads:
                     AWS_ENDPOINT_URL: "http://{{ parent.service_dns }}:4566"
                     AWS_REGION: "us-east-1"
                     AWS_ACCESS_KEY_ID: "test"
-                    AWS_SECRET_ACCESS_KEY: "test"
+                    AWS_SECRET_ACCESS_KEY: "test"  # pragma: allowlist secret
       - type: addon
         target: dynamodb-ui-ministack
         auto-deploy: false
@@ -238,7 +238,7 @@ workloads:
                 DYNAMO_ENDPOINT: "http://ministack.${LOKO_SYSTEM_WORKLOADS_NAMESPACE}.svc.cluster.local:4566"
                 AWS_REGION: "us-east-1"
                 AWS_ACCESS_KEY_ID: "test"
-                AWS_SECRET_ACCESS_KEY: "test"
+                AWS_SECRET_ACCESS_KEY: "test"  # pragma: allowlist secret
               probes:
                 liveness:
                   enabled: true

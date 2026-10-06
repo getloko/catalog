@@ -123,7 +123,8 @@ workloads:
         type: command
         tier: client
         image: postgres:alpine
-        command: ["psql", "-h", "${HOST}", "-U", "${USER}", "-c", "SELECT 1;"]
+        # Password inline in the URI (generated passwords are alphanumeric, so URI-safe)
+        command: ["psql", "postgresql://${USER}:${PASS}@${HOST}:5432/postgres", "-c", "SELECT 1;"]
         requires: ["psql"]
         description: Execute test query
     links:

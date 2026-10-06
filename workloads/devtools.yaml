@@ -478,7 +478,9 @@ workloads:
         type: command
         tier: client
         image: curlimages/curl:latest
-        command: ["curl", "-f", "https://${HOST}/sendsms?mobiles=+15551234567&sender=test&message=healthcheck"]
+        # Runs in-cluster as args to the image's curl entrypoint; the Service
+        # serves /sendsms over plain HTTP on 8082 (TLS only exists at the ingress).
+        command: ["-f", "http://${HOST}:8082/sendsms?mobiles=+15551234567&sender=test&message=healthcheck"]
         description: Test SMS sending API
 
   it-tools:

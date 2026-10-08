@@ -134,7 +134,7 @@ workloads:
           configMaps:
             config:
               data:
-                config.json: '{"servers":[{"name":"NATS","url":"https://{{ parent.name }}.${LOKO_DOMAIN}"}]}'
+                config.json: '{"servers":[{"name":"NATS","url":"https://{{ parent.name }}.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}"}]}'
     presets:
       # Enable JetStream (chart default is off) with file storage on a PVC
       # (fileStore.pvc is enabled by chart default; size comes from mappings.storage)
@@ -226,7 +226,7 @@ workloads:
       - name: ready
         type: command
         tier: client
-        command: ["curl", "-fsk", "https://redpanda-ui.${DOMAIN}/"]
+        command: ["curl", "-fsk", "https://redpanda-ui.${DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}/"]
         description: Check Redpanda Console UI is accessible
     # Base presets with console enabled by default
     presets:
@@ -685,7 +685,7 @@ workloads:
           # causes mixed-content failures in Twake/other browser clients.
           # http.url is an expression; wrap literal URL in single quotes so
           # Stalwart evaluates it as a constant string.
-          url: "'https://mail.${LOKO_DOMAIN}'"
+          url: "'https://mail.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}'"
           # Twake webmail runs on webmail.${LOKO_DOMAIN} and performs browser
           # OIDC discovery calls to mail.${LOKO_DOMAIN}/.well-known/*.
           # Allow cross-origin discovery/auth bootstrap.
@@ -814,7 +814,7 @@ workloads:
         config:
           data:
             # Pre-configure NATS server URL (served at /config.json)
-            config.json: '{"servers":[{"name":"NATS","url":"https://nats.${LOKO_DOMAIN}"}]}'
+            config.json: '{"servers":[{"name":"NATS","url":"https://nats.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}"}]}'
       persistence:
         config:
           type: configMap

@@ -90,12 +90,12 @@ workloads:
         description: Admin API (internal only)
     connection-strings:
       - name: s3
-        template: "https://${ACCESS_KEY}:${SECRET_KEY}@garage.${DOMAIN}"
+        template: "https://${ACCESS_KEY}:${SECRET_KEY}@garage.${DOMAIN}${HTTPS_PORT_SUFFIX}"
     health-checks:
       - name: s3-list
         type: command
         tier: infrastructure
-        command: ["aws", "--endpoint-url", "https://${HOST}", "s3", "ls", "--profile", "${AWS_PROFILE}"]
+        command: ["aws", "--endpoint-url", "https://${HOST}${HTTPS_PORT_SUFFIX}", "s3", "ls", "--profile", "${AWS_PROFILE}"]
         requires: ["aws"]
         description: List S3 buckets via AWS CLI
     presets:

@@ -27,7 +27,7 @@ workloads:
           tls:
             host: excalidraw.${LOKO_DOMAIN}
         # Point collab server URL to the in-cluster service (browser connects via same ingress)
-        customCollabServerURL: "https://excalidraw.${LOKO_DOMAIN}"
+        customCollabServerURL: "https://excalidraw.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}"
       collabServer:
         enabled: true
         service:
@@ -78,7 +78,7 @@ workloads:
         reason: "Cache, sessions and real-time messaging (the Penpot chart no longer bundles Valkey)"
     presets:
       config:
-        publicUri: "https://penpot.${LOKO_DOMAIN}"
+        publicUri: "https://penpot.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}"
         # Disable email verification and SMTP for local dev; enable core login features
         flags: "enable-registration enable-login-with-password disable-email-verification"
         telemetryEnabled: false

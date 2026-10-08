@@ -262,11 +262,11 @@ workloads:
         internalSecret: "loko-default-int-secret-change!"  # pragma: allowlist secret
         dexClientId: "terrakube-client"
         dexClientScope: "email openid profile offline_access groups"
-        dexIssuerUri: "https://terrakube-api.${LOKO_DOMAIN}/dex"
+        dexIssuerUri: "https://terrakube-api.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}/dex"
       dex:
         enabled: true
         config:
-          issuer: "https://terrakube-api.${LOKO_DOMAIN}/dex"
+          issuer: "https://terrakube-api.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}/dex"
           storage:
             type: memory
           web:
@@ -302,7 +302,7 @@ workloads:
           staticClients:
             - id: terrakube-client
               redirectURIs:
-                - "https://terrakube-ui.${LOKO_DOMAIN}"
+                - "https://terrakube-ui.${LOKO_DOMAIN}${LOKO_HTTPS_PORT_SUFFIX}"
                 - "/device/callback"
                 - "http://localhost:10000/login"
                 - "http://localhost:10001/login"
